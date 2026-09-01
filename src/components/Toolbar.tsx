@@ -1,10 +1,4 @@
-import {
-  type RefObject,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react"
+import { type RefObject, useCallback, useEffect, useRef, useState } from "react"
 
 import { CopyImageButton } from "~components/copy-image-button"
 import InboxPanel from "~components/InboxPanel"
@@ -14,6 +8,7 @@ import { useClipboard } from "~hooks/use-clipboard"
 import { generateBatchPresetOutput } from "~lib/output-presets"
 import {
   loadOutputTemplates,
+  OUTPUT_TEMPLATES_KEY,
   type OutputTemplate,
   type SelectedOutputPreset,
 } from "~lib/output-templates"
@@ -119,7 +114,12 @@ function useToolbar(props: Props) {
     [outputPreset, prefix, metadata, customTemplates]
   )
 
-  const actions = useToolbarActions({ copy, formatOutput, annotations, relations })
+  const actions = useToolbarActions({
+    copy,
+    formatOutput,
+    annotations,
+    relations,
+  })
 
   return {
     inboxOpen,
@@ -136,14 +136,26 @@ function useToolbar(props: Props) {
   }
 }
 
-// Custom templates are loaded once on mount (not re-read on every copy) —
-// the Options page is the only place that edits them, and the extra
-// storage round trip per click isn't worth the freshness it would buy.
+// Custom templates are loaded on mount and re-read whenever the Options page
+// edits them, so a newly added template shows up in the dropdown without
+// toggling the overlay off and on. The listener is narrowed to the template
+// key: annotations write to storage on every pin, and those writes must not
+// trigger a reload.
 function useCustomTemplates(): OutputTemplate[] {
   const [templates, setTemplates] = useState<OutputTemplate[]>([])
 
   useEffect(() => {
-    loadOutputTemplates().then(setTemplates)
+    const sync = () => {
+      loadOutputTemplates().then(setTemplates)
+    }
+    sync()
+    const onChanged = (changes: {
+      [key: string]: chrome.storage.StorageChange
+    }) => {
+      if (OUTPUT_TEMPLATES_KEY in changes) sync()
+    }
+    chrome.storage.onChanged.addListener(onChanged)
+    return () => chrome.storage.onChanged.removeListener(onChanged)
   }, [])
 
   return templates
@@ -156,7 +168,8 @@ function useStoredOutputPreset(): [
   SelectedOutputPreset,
   (preset: SelectedOutputPreset) => void,
 ] {
-  const [outputPreset, setOutputPreset] = useState<SelectedOutputPreset>("jsonl")
+  const [outputPreset, setOutputPreset] =
+    useState<SelectedOutputPreset>("jsonl")
 
   useEffect(() => {
     loadOutputPreset().then(setOutputPreset)
@@ -262,7 +275,8 @@ function ToolbarBar({
       popover="manual"
       onKeyDown={stopOverlayKeyPropagation}
       onKeyUp={stopOverlayKeyPropagation}
-      style={toolbarBarStyle(theme)}>
+      style={toolbarBarStyle(theme)}
+    >
       <InboxButton
         theme={theme}
         open={inboxOpen}
@@ -272,7 +286,8 @@ function ToolbarBar({
       <button
         onClick={onCopy}
         style={copyButtonStyle(copied)}
-        title={copied ? "Copied!" : `Copy All (${count})`}>
+        title={copied ? "Copied!" : `Copy All (${count})`}
+      >
         <CopyIcon color={copied ? theme.success : theme.textMuted} />
       </button>
       <CopyImageButton annotations={annotations} />
@@ -300,7 +315,11 @@ interface InboxButtonProps {
 
 function InboxButton({ theme, open, count, onToggle }: InboxButtonProps) {
   return (
-    <button onClick={onToggle} style={inboxButtonStyle(theme, open)} title="Inbox">
+    <button
+      onClick={onToggle}
+      style={inboxButtonStyle(theme, open)}
+      title="Inbox"
+    >
       <InboxIcon color={open ? theme.accent : theme.textMuted} />
       {count > 0 && <span style={inboxBadgeStyle(theme)}>{count}</span>}
     </button>
