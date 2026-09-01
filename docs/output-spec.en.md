@@ -59,7 +59,7 @@ The pin's popover has an adjustment panel, opened via the "Adjust styles" toggle
 - On revisiting the page (when pins are restored), the preview is not automatically reapplied. The record (styleDelta) remains, but the appearance stays as-is; opening the popover restores the saved values into the rows
 - Reflected in the output:
   - **JSONL**: adds `"styleDelta":[{"property":"margin","before":"16px","after":"8px"}]` to the `annotation` object (if empty, the `styleDelta` key itself is omitted)
-  - **Markdown** (common to full/cursor; omitted by minimal, which uses the [Feedback Report format](#minimal-preset-format)): adds the following immediately after the `**Tags**` line (the section is omitted entirely if there is no styleDelta)
+  - **Markdown** (common to full/cursor): adds the following immediately after the `**Tags**` line (the section is omitted entirely if there is no styleDelta)
     ```
     **Style changes**:
       - margin: 16px → 8px
@@ -72,6 +72,11 @@ The pin's popover has an adjustment panel, opened via the "Adjust styles" toggle
     </style-changes>
     ```
     This is distinct from the existing `<style-diff>` (the same content as the Selected Element's Styles, i.e. the current effective style) — do not confuse the two
+  - **minimal (Feedback Report)**: adds the following after the element lines (the section is omitted entirely if there is no styleDelta; see [minimal Preset Format](#minimal-preset-format))
+    ```
+    ### Style Changes
+    - font-size: 13px → 16px
+    ```
 
 ### 2. Page Context
 
@@ -327,7 +332,7 @@ In the Toolbar's format dropdown, in addition to the Markdown/JSONL described ab
 | `markdown` | Markdown | The existing full output |
 | `claude-code` | XML tag structure | The XML wrapper format described below. Also serves as the auto-trigger marker for the tegakari-fix skill |
 | `cursor` | Markdown | A condensed version. Page Context has only url/title/framework (batch metadata is omitted); Component Tree has only names (up to the 3 levels nearest the selected element) and Source, with Props/State omitted |
-| `minimal` | Markdown (own structure) | A review-comment style **Feedback Report** (the default). The instruction is quoted, followed by Tags and the element lines — Element/Selector/Classes/Text. Attributes as a whole, Styles, CSS Rules/CSS Variables, Component Tree, Style changes and Relations are omitted. See [minimal Preset Format](#minimal-preset-format) below |
+| `minimal` | Markdown (own structure) | A review-comment style **Feedback Report** (the default). The instruction is quoted, followed by Tags, the element lines — Element/Selector/Classes/Text — and a `### Style Changes` block when a styleDelta exists. Attributes as a whole, Styles (effective styles), CSS Rules/CSS Variables, Component Tree and Relations are omitted. See [minimal Preset Format](#minimal-preset-format) below |
 
 ### minimal Preset Format
 
@@ -349,12 +354,16 @@ URL: <page URL>
 - Classes: `btn, btn-ghost, btn-lg, btn-block`
 - Text: "Sign in with another account"
 
+### Style Changes
+- font-size: 13px → 16px
+
 ## Feedback #2
 ...
 ```
 
 - The section number `#N` is the annotation's `id` (it matches the pin number on the page, not the position in the array)
 - Each line of the instruction is prefixed with `> `, so multi-line text stays quoted. When the instruction is empty the blockquote is dropped entirely and only the heading remains
+- `Style Changes` is emitted only when there is a `styleDelta`, **after** the element lines, as an `###` heading plus a `- property: before → after` list (so the element bullet list stays unbroken). The entry lines come from the Markdown preset's shared `styleDeltaEntryLines` helper
 - `Tags` is the selected quick-instruction chip **ids** (not their display labels) joined with commas, with the whole list wrapped in a single code span. It sits above the element lines. When there are no tags the line is omitted
 - `Classes` is the `class` attribute split on whitespace and joined with commas, with the whole list wrapped in a single code span. When the element has no classes the line is omitted
 - When `Text` is empty its line is omitted. `Element` and `Selector` are always emitted
