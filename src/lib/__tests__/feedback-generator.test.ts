@@ -60,7 +60,12 @@ it("generateBatchFeedback: renders the full report shape for multiple annotation
   const result = generateBatchFeedback(
     makeBatch({
       annotations: [
-        makeAnnotation({ tags: ["spacing", "color"] }),
+        makeAnnotation({
+          tags: ["spacing", "color"],
+          styleDelta: [
+            { property: "font-size", before: "13px", after: "16px" },
+          ],
+        }),
         makeAnnotation({
           id: 2,
           instruction: "連絡先メールアドレスは出さない。",
@@ -90,6 +95,9 @@ it("generateBatchFeedback: renders the full report shape for multiple annotation
       "- Selector: `button.btn`",
       "- Classes: `btn, btn-ghost, btn-lg, btn-block`",
       '- Text: "別のアカウントでログインする"',
+      "",
+      "### Style Changes",
+      "- font-size: 13px → 16px",
       "",
       "## Feedback #2",
       "> 連絡先メールアドレスは出さない。",
@@ -222,4 +230,57 @@ it("generateBatchFeedback: emits tag ids verbatim, not their display labels", ()
     makeBatch({ annotations: [makeAnnotation({ tags: ["remove"] })] })
   )
   expect(result).toContain("- Tags: `remove`")
+})
+
+it("generateBatchFeedback: puts Style Changes after the element lines as an h3 list", () => {
+  const result = generateBatchFeedback(
+    makeBatch({
+      annotations: [
+        makeAnnotation({
+          instruction: "ホームの垂直中央位置がずれている",
+          styleDelta: [
+            { property: "font-size", before: "13px", after: "16px" },
+            { property: "color", before: "rgb(51, 51, 51)", after: "#2563eb" },
+          ],
+        }),
+      ],
+    })
+  )
+
+  expect(result).toContain(
+    [
+      '- Text: "別のアカウントでログインする"',
+      "",
+      "### Style Changes",
+      "- font-size: 13px → 16px",
+      "- color: rgb(51, 51, 51) → #2563eb",
+    ].join("\n")
+  )
+})
+
+it("generateBatchFeedback: omits the Style Changes block when there is no styleDelta", () => {
+  const absent = generateBatchFeedback(
+    makeBatch({ annotations: [makeAnnotation()] })
+  )
+  const empty = generateBatchFeedback(
+    makeBatch({ annotations: [makeAnnotation({ styleDelta: [] })] })
+  )
+  expect(absent).not.toContain("### Style Changes")
+  expect(empty).not.toContain("### Style Changes")
+})
+
+it("generateBatchFeedback: keeps Style Changes per annotation, not shared", () => {
+  const result = generateBatchFeedback(
+    makeBatch({
+      annotations: [
+        makeAnnotation({
+          styleDelta: [{ property: "gap", before: "8px", after: "16px" }],
+        }),
+        makeAnnotation({ id: 2 }),
+      ],
+    })
+  )
+  const sections = result.split("## Feedback #")
+  expect(sections[1]).toContain("### Style Changes")
+  expect(sections[2]).not.toContain("### Style Changes")
 })

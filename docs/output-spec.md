@@ -59,7 +59,7 @@ Toolbarのドロップダウンから5つの組み込み出力プリセット（
 - ページ再訪時（ピン復元時）にプレビューは自動再適用しない。記録（styleDelta）は残るが見た目は素のままで、ポップオーバーを開くと保存済みの値が行に復元される
 - 出力への反映:
   - **JSONL**: `annotation`オブジェクトに`"styleDelta":[{"property":"margin","before":"16px","after":"8px"}]`を追加（空なら`styleDelta`キー自体を省略）
-  - **Markdown**（full/cursor共通。minimalは[Feedback Report形式](#minimalプリセットの形式)のため省略）: `**Tags**`行の直後に以下を追加（styleDeltaが無ければセクションごと省略）
+  - **Markdown**（full/cursor共通）: `**Tags**`行の直後に以下を追加（styleDeltaが無ければセクションごと省略）
     ```
     **Style changes**:
       - margin: 16px → 8px
@@ -72,6 +72,11 @@ Toolbarのドロップダウンから5つの組み込み出力プリセット（
     </style-changes>
     ```
     既存の`<style-diff>`（Selected ElementのStylesと同じ内容＝現状の実効スタイル）とは別物なので混同しないこと
+  - **minimal（Feedback Report）**: 要素の各行の後に以下を追加（styleDeltaが無ければセクションごと省略。[minimalプリセットの形式](#minimalプリセットの形式)参照）
+    ```
+    ### Style Changes
+    - font-size: 13px → 16px
+    ```
 
 ### 2. Page Context
 
@@ -327,7 +332,7 @@ Toolbarの形式ドロップダウンでは、上記のMarkdown/JSONLに加え�
 | `markdown` | Markdown | 既存のフル出力 |
 | `claude-code` | XMLタグ構造 | 下記のXMLラッパー形式。tegakari-fixスキルの自動起動マーカーを兼ねる |
 | `cursor` | Markdown | 簡潔版。Page Contextはurl/title/frameworkのみ（バッチ時のmetadataは省略）、Component Treeは名前（選択要素に近い最大3階層）とSourceのみでProps/Stateは省略 |
-| `minimal` | Markdown（独自構造） | レビューコメント形式の**Feedback Report**（デフォルト）。指示を引用、続けてTagsと要素のElement/Selector/Classes/Textの行のみ。Attributes全体・Styles・CSS Rules/CSS Variables・Component Tree・Style changes・Relationsは省略。下記[minimalプリセットの形式](#minimalプリセットの形式)参照 |
+| `minimal` | Markdown（独自構造） | レビューコメント形式の**Feedback Report**（デフォルト）。指示を引用、続けてTagsと要素のElement/Selector/Classes/Textの行、styleDeltaがあれば`### Style Changes`。Attributes全体・Styles（実効スタイル）・CSS Rules/CSS Variables・Component Tree・Relationsは省略。下記[minimalプリセットの形式](#minimalプリセットの形式)参照 |
 
 ### minimalプリセットの形式
 
@@ -349,12 +354,16 @@ URL: <ページURL>
 - Classes: `btn, btn-ghost, btn-lg, btn-block`
 - Text: "別のアカウントでログインする"
 
+### Style Changes
+- font-size: 13px → 16px
+
 ## Feedback #2
 ...
 ```
 
 - セクション番号`#N`はアノテーションの`id`（ページ上のピン番号と一致する。配列内の位置ではない）
 - 指示テキストは各行の先頭に`> `を付ける（複数行でも引用が崩れない）。指示が空の場合は引用ブロックごと省略し、見出しは残す
+- `Style Changes`は`styleDelta`がある場合のみ、要素の各行の**後**に`###`見出し＋`- property: before → after`の箇条書きで出力する（要素の箇条書きを分断しないため）。行の文面はMarkdownプリセットと共有のヘルパー（`styleDeltaEntryLines`）を使う
 - `Tags`は選択されたクイック指示チップの`id`をカンマ区切りにし、リスト全体を1つのコード記法で囲む（表示ラベルではない）。要素の各行より上に置く。タグが無い場合は行ごと省略
 - `Classes`は`class`属性を空白で分割してカンマ区切りにし、リスト全体を1つのコード記法（バッククォート）で囲む。クラスが無い場合は行ごと省略
 - `Text`が空の場合は行ごと省略。`Element`と`Selector`は常に出力される

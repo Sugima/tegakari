@@ -1,15 +1,22 @@
 /**
  * The `minimal` preset: a compact review-comment report. One heading per
  * annotation, the user's instruction as a blockquote, the selected
- * quick-instruction tags, and just enough element identity underneath to find
- * the node again (element / selector / classes / text). Everything the full
- * Markdown output carries beyond that — attributes, styles, CSS provenance,
- * component tree, relations — is deliberately dropped.
+ * quick-instruction tags, just enough element identity underneath to find the
+ * node again (element / selector / classes / text), and any on-page style
+ * adjustments. Everything the full Markdown output carries beyond that —
+ * attributes, effective styles, CSS provenance, component tree, relations — is
+ * deliberately dropped.
  *
  * See `docs/output-spec.md#minimal-プリセットの形式` for the contract.
  */
 import { formatClassList } from "./element-classes"
-import type { BatchInput, ElementInfo, MarkdownInput } from "./types"
+import { styleDeltaEntryLines } from "./markdown-generator"
+import type {
+  BatchInput,
+  ElementInfo,
+  MarkdownInput,
+  StyleDelta,
+} from "./types"
 
 const HEADER = "---\n\n# Feedback Report"
 
@@ -35,12 +42,27 @@ function elementLines(el: ElementInfo): string[] {
   ]
 }
 
+/**
+ * The on-page style adjustments as an `### Style Changes` block, placed after
+ * the element lines so the identity list stays one uninterrupted bullet list.
+ * Entry lines reuse the Markdown preset's shared helper, so the
+ * `property: before → after` wording can't drift between presets.
+ */
+function styleChangesSection(delta: StyleDelta[] | undefined): string | null {
+  const entries = styleDeltaEntryLines(delta)
+  if (entries.length === 0) return null
+  const lines = entries.map((entry) => `- ${entry}`)
+  return `### Style Changes\n${lines.join("\n")}`
+}
+
 interface Section {
   index: number
   instruction: string
   elementInfo: ElementInfo
   /** Quick-instruction chip ids; omitted or empty means "no tags". */
   tags?: string[]
+  /** On-page style adjustments; omitted or empty means "no changes". */
+  styleDelta?: StyleDelta[]
 }
 
 function feedbackSection({
@@ -48,6 +70,7 @@ function feedbackSection({
   instruction,
   elementInfo,
   tags,
+  styleDelta,
 }: Section): string {
   const quote = blockquote(instruction)
   const head = quote
@@ -58,7 +81,13 @@ function feedbackSection({
     ...(tagList ? [`- Tags: \`${tagList}\``] : []),
     ...elementLines(elementInfo),
   ]
-  return `${head}\n\n${lines.join("\n")}`
+  const styleChanges = styleChangesSection(styleDelta)
+  const parts = [
+    head,
+    lines.join("\n"),
+    ...(styleChanges ? [styleChanges] : []),
+  ]
+  return parts.join("\n\n")
 }
 
 function header(pageUrl: string): string {
@@ -67,7 +96,8 @@ function header(pageUrl: string): string {
 
 /**
  * Single-element output. Always numbered `#1` — there is only one section.
- * `MarkdownInput` carries no tags, so no Tags line is emitted on this path.
+ * `MarkdownInput` carries neither tags nor styleDelta, so neither the Tags line
+ * nor the Style Changes block is emitted on this path.
  */
 export function generateFeedback(input: MarkdownInput): string {
   return [
@@ -93,6 +123,7 @@ export function generateBatchFeedback(input: BatchInput): string {
       instruction: annotation.instruction,
       elementInfo: annotation.elementInfo,
       tags: annotation.tags,
+      styleDelta: annotation.styleDelta,
     })
   )
   const body = [header(input.pageUrl), ...sections].join("\n\n")
