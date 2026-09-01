@@ -46,7 +46,8 @@ The pin's popover places six fixed category chips around the instruction text ar
 - When the popover is closed and reopened, the selection state is restored
 - Reflected in the output (the content uses the `id` as-is, not the display label):
   - **JSONL**: adds `"tags":["spacing","color"]` to the `annotation` object (if empty, the `tags` key itself is omitted)
-  - **Markdown** (common to full/cursor; omitted by minimal, which uses the [Feedback Report format](#minimal-preset-format)): adds `**Tags**: spacing, color` immediately after the `**Instruction**` line (if empty, the line itself is omitted)
+  - **Markdown** (common to full/cursor): adds `**Tags**: spacing, color` immediately after the `**Instruction**` line (if empty, the line itself is omitted)
+  - **minimal (Feedback Report)**: adds `- Tags: \`spacing, color\`` right after the blockquote, above the `- Element:` line (omitted entirely when empty; see [minimal Preset Format](#minimal-preset-format))
   - **claude-code (XML)**: adds `<tags>spacing, color</tags>` immediately after `<instruction>` (output at this position even when instruction is empty but tags exist; omitted if tags is empty)
 
 #### Style changes (On-page Style Adjustment Mode)
@@ -326,7 +327,7 @@ In the Toolbar's format dropdown, in addition to the Markdown/JSONL described ab
 | `markdown` | Markdown | The existing full output |
 | `claude-code` | XML tag structure | The XML wrapper format described below. Also serves as the auto-trigger marker for the tegakari-fix skill |
 | `cursor` | Markdown | A condensed version. Page Context has only url/title/framework (batch metadata is omitted); Component Tree has only names (up to the 3 levels nearest the selected element) and Source, with Props/State omitted |
-| `minimal` | Markdown (own structure) | A review-comment style **Feedback Report** (the default). The instruction is quoted; the element is reduced to four lines — Element/Selector/Classes/Text. Attributes as a whole, Styles, CSS Rules/CSS Variables, Component Tree, Tags, Style changes and Relations are omitted. See [minimal Preset Format](#minimal-preset-format) below |
+| `minimal` | Markdown (own structure) | A review-comment style **Feedback Report** (the default). The instruction is quoted, followed by Tags and the element lines — Element/Selector/Classes/Text. Attributes as a whole, Styles, CSS Rules/CSS Variables, Component Tree, Style changes and Relations are omitted. See [minimal Preset Format](#minimal-preset-format) below |
 
 ### minimal Preset Format
 
@@ -342,6 +343,7 @@ URL: <page URL>
 ## Feedback #1
 > the user's instruction text
 
+- Tags: `spacing, color`
 - Element: `<button>`
 - Selector: `button.btn`
 - Classes: `btn, btn-ghost, btn-lg, btn-block`
@@ -353,6 +355,7 @@ URL: <page URL>
 
 - The section number `#N` is the annotation's `id` (it matches the pin number on the page, not the position in the array)
 - Each line of the instruction is prefixed with `> `, so multi-line text stays quoted. When the instruction is empty the blockquote is dropped entirely and only the heading remains
+- `Tags` is the selected quick-instruction chip **ids** (not their display labels) joined with commas, with the whole list wrapped in a single code span. It sits above the element lines. When there are no tags the line is omitted
 - `Classes` is the `class` attribute split on whitespace and joined with commas, with the whole list wrapped in a single code span. When the element has no classes the line is omitted
 - When `Text` is empty its line is omitted. `Element` and `Selector` are always emitted
 - With zero annotations only the header (`---` through `URL:`) is emitted
