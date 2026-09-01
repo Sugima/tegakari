@@ -344,7 +344,7 @@ URL: <page URL>
 
 - Element: `<button>`
 - Selector: `button.btn`
-- Classes: btn, btn-ghost, btn-lg, btn-block
+- Classes: `btn, btn-ghost, btn-lg, btn-block`
 - Text: "Sign in with another account"
 
 ## Feedback #2
@@ -353,7 +353,7 @@ URL: <page URL>
 
 - The section number `#N` is the annotation's `id` (it matches the pin number on the page, not the position in the array)
 - Each line of the instruction is prefixed with `> `, so multi-line text stays quoted. When the instruction is empty the blockquote is dropped entirely and only the heading remains
-- `Classes` is the `class` attribute split on whitespace and joined with commas (no code-mark decoration). When the element has no classes the line is omitted
+- `Classes` is the `class` attribute split on whitespace and joined with commas, with the whole list wrapped in a single code span. When the element has no classes the line is omitted
 - When `Text` is empty its line is omitted. `Element` and `Selector` are always emitted
 - With zero annotations only the header (`---` through `URL:`) is emitted
 - The prefix rule (`[repo=...]`) goes above the `---`, at the very top of the output

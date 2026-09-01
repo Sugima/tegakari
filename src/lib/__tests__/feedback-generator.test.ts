@@ -87,7 +87,7 @@ it("generateBatchFeedback: renders the full report shape for multiple annotation
       "",
       "- Element: `<button>`",
       "- Selector: `button.btn`",
-      "- Classes: btn, btn-ghost, btn-lg, btn-block",
+      "- Classes: `btn, btn-ghost, btn-lg, btn-block`",
       '- Text: "別のアカウントでログインする"',
       "",
       "## Feedback #2",
@@ -95,7 +95,7 @@ it("generateBatchFeedback: renders the full report shape for multiple annotation
       "",
       "- Element: `<div>`",
       "- Selector: `div.admin-contact`",
-      "- Classes: admin-contact",
+      "- Classes: `admin-contact`",
       '- Text: "管理者: AI・DX推進室（aidx@example.com）"',
     ].join("\n")
   )
@@ -192,7 +192,7 @@ it("generateFeedback: renders a single element as Feedback #1", () => {
       "",
       "- Element: `<button>`",
       "- Selector: `button.btn`",
-      "- Classes: btn, btn-ghost, btn-lg, btn-block",
+      "- Classes: `btn, btn-ghost, btn-lg, btn-block`",
       '- Text: "別のアカウントでログインする"',
     ].join("\n")
   )

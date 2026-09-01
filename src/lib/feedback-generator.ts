@@ -29,7 +29,7 @@ function elementLines(el: ElementInfo): string[] {
   return [
     `- Element: \`<${el.tag}>\``,
     `- Selector: \`${el.selector}\``,
-    ...(classes ? [`- Classes: ${classes}`] : []),
+    ...(classes ? [`- Classes: \`${classes}\``] : []),
     ...(text ? [`- Text: "${text}"`] : []),
   ]
 }
