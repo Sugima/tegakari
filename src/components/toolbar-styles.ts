@@ -27,6 +27,12 @@ export function toolbarBarStyle(theme: Theme): CSSProperties {
     backgroundColor: theme.surface,
     border: `1px solid ${theme.border}`,
     borderRadius: 50,
+    // The bar is promoted to the top layer via `popover="manual"`, and the UA
+    // stylesheet's `[popover]` rule brings `overflow: auto` with it. That
+    // clips the preset dropdown, which opens upward outside the bar — and an
+    // upward overflow can't even be scrolled to, so the menu is simply
+    // invisible. Restore `visible` so the menu escapes the bar.
+    overflow: "visible",
     boxShadow: theme.shadowStrong,
     fontFamily: theme.fontFamily,
     fontSize: 13,
@@ -73,4 +79,3 @@ export function copyButtonStyle(copied: boolean): CSSProperties {
 export function dividerStyle(theme: Theme): CSSProperties {
   return { width: 1, height: 20, backgroundColor: theme.border }
 }
-
