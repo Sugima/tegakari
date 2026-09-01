@@ -169,7 +169,7 @@ function useStoredOutputPreset(): [
   (preset: SelectedOutputPreset) => void,
 ] {
   const [outputPreset, setOutputPreset] =
-    useState<SelectedOutputPreset>("jsonl")
+    useState<SelectedOutputPreset>("minimal")
 
   useEffect(() => {
     loadOutputPreset().then(setOutputPreset)

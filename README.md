@@ -38,7 +38,7 @@ Copy the generated text to your clipboard and paste it straight into AI editors 
 - Resolve the component's source location (`file:line`) into the output when available (dev builds)
 - Detect meta-frameworks such as Next.js / Nuxt / SvelteKit
 - Collect page metadata (viewport, user agent, language) and include it in the output
-- Choose an output preset from the Toolbar dropdown — JSONL, Markdown, **Claude Code** (XML, auto-triggers the `tegakari-fix` skill), **Cursor** (trimmed), or **Minimal** (token-saving) — and copy to the clipboard. Your choice is remembered across sessions
+- Choose an output preset from the Toolbar dropdown — **Minimal** (a review-comment *Feedback Report*, the default), JSONL, Markdown, **Claude Code** (XML, auto-triggers the `tegakari-fix` skill), or **Cursor** (trimmed) — and copy to the clipboard. Your choice is remembered across sessions
 - Define your own output templates with `{{instruction}}`-style placeholders for a custom workflow (Options page, up to 10, JSON import/export)
 - Copy all annotation screenshots as a single contact-sheet image
 - Export / import annotation sets as a timestamped JSON file (`tegakari-annotations-*.json`) to share or back them up
@@ -91,7 +91,7 @@ Install it from the Chrome Web Store:
    - **Inbox**: show the annotation list (Active / Archived tabs)
    - **Copy**: copy all annotations to the clipboard
    - **Copy Image**: copy all annotation screenshots as a single contact-sheet image
-   - **Preset dropdown**: switch the output format — JSONL, Markdown, Claude Code, Cursor, Minimal, or any custom template you've defined in Options
+   - **Preset dropdown**: switch the output format — Minimal (default), JSONL, Markdown, Claude Code, Cursor, or any custom template you've defined in Options
 7. Each item in the Inbox has a copy button (single copy) and an archive button
 8. Use the import / export buttons in the Inbox to save the annotation set as a JSON file (`tegakari-annotations-*.json`) and restore it later
 9. Paste it into your AI editor and put it to work
@@ -120,7 +120,7 @@ If you are not comfortable with regular expressions, the [`tegakari-prefix-rules
 
 ## Output examples
 
-The examples below show the full Markdown/JSONL formats, including quick-instruction tags, a style-change diff, CSS provenance, and a relation between two annotations. For the output presets (Claude Code / Cursor / Minimal) and custom templates, see [`docs/output-spec.en.md`](docs/output-spec.en.md).
+The examples below show the full Markdown/JSONL formats, including quick-instruction tags, a style-change diff, CSS provenance, and a relation between two annotations. For the output presets (Minimal / Claude Code / Cursor) and custom templates, see [`docs/output-spec.en.md`](docs/output-spec.en.md).
 
 ### Markdown format
 

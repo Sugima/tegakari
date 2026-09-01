@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import {
   IFRAME_SELECTION_KEY,
-  OUTPUT_FORMAT_KEY,
   loadIframeSelection,
   loadOutputPreset,
+  OUTPUT_FORMAT_KEY,
   setIframeSelection,
   setOutputPreset,
 } from "../settings"
@@ -53,8 +53,8 @@ describe("settings: iframe selection", () => {
 })
 
 describe("settings: output preset", () => {
-  it("defaults to jsonl when unset", async () => {
-    await expect(loadOutputPreset()).resolves.toBe("jsonl")
+  it("defaults to minimal when unset", async () => {
+    await expect(loadOutputPreset()).resolves.toBe("minimal")
   })
 
   it("reads markdown when persisted", async () => {
@@ -62,22 +62,25 @@ describe("settings: output preset", () => {
     await expect(loadOutputPreset()).resolves.toBe("markdown")
   })
 
-  it.each(["jsonl", "markdown", "claude-code", "cursor", "minimal"] as const)(
-    "reads the %s preset when persisted",
-    async (preset) => {
-      storage[OUTPUT_FORMAT_KEY] = preset
-      await expect(loadOutputPreset()).resolves.toBe(preset)
-    }
-  )
-
-  it("falls back to jsonl for unknown values", async () => {
-    storage[OUTPUT_FORMAT_KEY] = "yaml"
-    await expect(loadOutputPreset()).resolves.toBe("jsonl")
+  it.each([
+    "jsonl",
+    "markdown",
+    "claude-code",
+    "cursor",
+    "minimal",
+  ] as const)("reads the %s preset when persisted", async (preset) => {
+    storage[OUTPUT_FORMAT_KEY] = preset
+    await expect(loadOutputPreset()).resolves.toBe(preset)
   })
 
-  it("falls back to jsonl for non-string values", async () => {
+  it("falls back to minimal for unknown values", async () => {
+    storage[OUTPUT_FORMAT_KEY] = "yaml"
+    await expect(loadOutputPreset()).resolves.toBe("minimal")
+  })
+
+  it("falls back to minimal for non-string values", async () => {
     storage[OUTPUT_FORMAT_KEY] = 42
-    await expect(loadOutputPreset()).resolves.toBe("jsonl")
+    await expect(loadOutputPreset()).resolves.toBe("minimal")
   })
 
   it("persists the chosen preset", () => {
@@ -104,8 +107,8 @@ describe("settings: output preset", () => {
     })
   })
 
-  it("still falls back to jsonl for a string that merely starts with 'custom' without the colon", async () => {
+  it("still falls back to minimal for a string that merely starts with 'custom' without the colon", async () => {
     storage[OUTPUT_FORMAT_KEY] = "customized"
-    await expect(loadOutputPreset()).resolves.toBe("jsonl")
+    await expect(loadOutputPreset()).resolves.toBe("minimal")
   })
 })

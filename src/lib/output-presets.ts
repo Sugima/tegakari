@@ -1,3 +1,4 @@
+import { generateBatchFeedback, generateFeedback } from "./feedback-generator"
 import { generateBatchJsonl, generateJsonl } from "./jsonl-generator"
 import { generateBatchMarkdown, generateMarkdown } from "./markdown-generator"
 import {
@@ -7,7 +8,12 @@ import {
   type SelectedOutputPreset,
 } from "./output-templates"
 import { renderOutputTemplate } from "./template-renderer"
-import type { BatchInput, MarkdownInput, MarkdownSectionOptions, OutputPreset } from "./types"
+import type {
+  BatchInput,
+  MarkdownInput,
+  MarkdownSectionOptions,
+  OutputPreset,
+} from "./types"
 import { generateBatchXml, generateXml } from "./xml-generator"
 
 /** All selectable presets, in the order they should appear in the UI. */
@@ -32,12 +38,6 @@ const CURSOR_OPTIONS: MarkdownSectionOptions = {
   component: "brief",
 }
 
-const MINIMAL_OPTIONS: MarkdownSectionOptions = {
-  pageContext: "url-only",
-  element: "minimal",
-  component: "none",
-}
-
 /** Render a single (non-batch) input for the given preset. */
 export function generatePresetOutput(
   preset: OutputPreset,
@@ -53,7 +53,7 @@ export function generatePresetOutput(
     case "cursor":
       return generateMarkdown(input, CURSOR_OPTIONS)
     case "minimal":
-      return generateMarkdown(input, MINIMAL_OPTIONS)
+      return generateFeedback(input)
   }
 }
 
@@ -74,7 +74,9 @@ export function generateBatchPresetOutput(
   if (isCustomPresetValue(preset)) {
     const templateId = customPresetTemplateId(preset)
     const template = customTemplates.find((t) => t.id === templateId)
-    return template ? renderOutputTemplate(template, input) : generateBatchJsonl(input)
+    return template
+      ? renderOutputTemplate(template, input)
+      : generateBatchJsonl(input)
   }
 
   switch (preset) {
@@ -87,6 +89,6 @@ export function generateBatchPresetOutput(
     case "cursor":
       return generateBatchMarkdown(input, CURSOR_OPTIONS)
     case "minimal":
-      return generateBatchMarkdown(input, MINIMAL_OPTIONS)
+      return generateBatchFeedback(input)
   }
 }

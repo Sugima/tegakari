@@ -38,7 +38,7 @@ Webページ上の要素を選択し、そのコンテキスト情報（要素�
 - コンポーネントのソース位置（`file:line`）を解決して出力に含める（取得できる場合・dev build）
 - Next.js / Nuxt / SvelteKit などのメタフレームワークを検出
 - ページメタデータ（Viewport、UserAgent、Language）を自動収集して出力に含める
-- Toolbar のドロップダウンから出力プリセットを選択 — JSONL / Markdown に加え、**Claude Code**（XML形式、`tegakari-fix`スキルの自動起動マーカー付き）/ **Cursor**（簡潔版）/ **Minimal**（トークン節約）。選択したプリセットはセッションをまたいで保持される
+- Toolbar のドロップダウンから出力プリセットを選択 — **Minimal**（レビューコメント形式の *Feedback Report*、デフォルト）/ JSONL / Markdown / **Claude Code**（XML形式、`tegakari-fix`スキルの自動起動マーカー付き）/ **Cursor**（簡潔版）。選択したプリセットはセッションをまたいで保持される
 - `{{instruction}}` 等のプレースホルダーで、自分のワークフロー向けの出力テンプレートを定義（Options ページで管理、最大10件、JSON import/export）
 - 全アノテーションのスクリーンショットを1枚のコンタクトシート画像としてコピー
 - アノテーションセットを JSON ファイル（`tegakari-annotations-*.json`）として export / import（共有・バックアップ用）
@@ -91,7 +91,7 @@ Chrome ウェブストアからインストールできます。
    - **Inbox**: アノテーション一覧の表示（Active / Archived タブ切替）
    - **Copy**: 全アノテーションをクリップボードにコピー
    - **Copy Image**: 全アノテーションのスクリーンショットを1枚のコンタクトシート画像としてコピー
-   - **プリセットドロップダウン**: 出力形式の切り替え — JSONL / Markdown / Claude Code / Cursor / Minimal、または Options で定義したカスタムテンプレート
+   - **プリセットドロップダウン**: 出力形式の切り替え — Minimal（デフォルト）/ JSONL / Markdown / Claude Code / Cursor、または Options で定義したカスタムテンプレート
 7. Inbox 内の各項目にはコピーボタン（単体コピー）とアーカイブボタンがあります
 8. Inbox のインポート / エクスポートボタンで、アノテーションセットを JSON ファイル（`tegakari-annotations-*.json`）として保存・復元できます
 9. AIエディタに貼り付けて活用してください
@@ -120,7 +120,7 @@ Options ページの **Behavior** セクションで「Select inside iframes」�
 
 ## 出力例
 
-以下はMarkdown/JSONLのフル出力形式の例です（クイック指示チップ、スタイル変更差分、CSS出所情報、アノテーション間のリレーションを含む）。出力プリセット（Claude Code / Cursor / Minimal）やカスタムテンプレートについては [`docs/output-spec.md`](docs/output-spec.md) を参照してください。
+以下はMarkdown/JSONLのフル出力形式の例です（クイック指示チップ、スタイル変更差分、CSS出所情報、アノテーション間のリレーションを含む）。出力プリセット（Minimal / Claude Code / Cursor）やカスタムテンプレートについては [`docs/output-spec.md`](docs/output-spec.md) を参照してください。
 
 ### Markdown形式
 

@@ -3,6 +3,7 @@
  * `output-templates.ts`). Deliberately minimal: `{{key}}` substitution only,
  * no conditionals or loops.
  */
+import { formatClassList } from "./element-classes"
 import type { OutputTemplate } from "./output-templates"
 import { formatSourceLocation } from "./source-location"
 import type { Annotation, BatchInput } from "./types"
@@ -62,13 +63,15 @@ function buildAnnotationValues(annotation: Annotation): Record<string, string> {
     tags: annotation.tags?.join(", ") ?? "",
     selector: annotation.elementInfo.selector,
     tag: annotation.elementInfo.tag,
+    classes: formatClassList(annotation.elementInfo),
     text: annotation.elementInfo.text,
     attributes: keyValueLines(annotation.elementInfo.attributes),
     styles: keyValueLines(annotation.elementInfo.styles),
     "component.hierarchy": comp ? comp.hierarchy.join(" → ") : "",
-    "component.name": comp && comp.hierarchy.length > 0
-      ? comp.hierarchy[comp.hierarchy.length - 1]
-      : "",
+    "component.name":
+      comp && comp.hierarchy.length > 0
+        ? comp.hierarchy[comp.hierarchy.length - 1]
+        : "",
     "component.source": comp?.source ? formatSourceLocation(comp.source) : "",
     "component.props": comp?.props ? JSON.stringify(comp.props) : "",
   }
@@ -96,7 +99,10 @@ export function renderOutputTemplate(
     buildHeaderValues(input)
   ).trim()
   const renderedAnnotations = input.annotations.map((annotation) =>
-    renderPlaceholders(template.annotation, buildAnnotationValues(annotation)).trim()
+    renderPlaceholders(
+      template.annotation,
+      buildAnnotationValues(annotation)
+    ).trim()
   )
 
   const body = [renderedHeader, ...renderedAnnotations]

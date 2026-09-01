@@ -1,13 +1,12 @@
 import { describe, expect, it } from "vitest"
-
-import { CLAUDE_CODE_MARKER } from "../xml-generator"
 import {
-  OUTPUT_PRESET_LABELS,
-  OUTPUT_PRESETS,
   generateBatchPresetOutput,
   generatePresetOutput,
+  OUTPUT_PRESET_LABELS,
+  OUTPUT_PRESETS,
 } from "../output-presets"
 import type { BatchInput, MarkdownInput, OutputPreset } from "../types"
+import { CLAUDE_CODE_MARKER } from "../xml-generator"
 
 const singleInput: MarkdownInput = {
   instruction: "Fix this",
@@ -86,8 +85,10 @@ describe("generatePresetOutput", () => {
     expect(result).not.toContain("**Props**")
   })
 
-  it("minimal routes to the most trimmed Markdown (no component section)", () => {
+  it("minimal routes to the Feedback Report format", () => {
     const result = generatePresetOutput("minimal", singleInput)
+    expect(result.startsWith("---\n\n# Feedback Report\n")).toBe(true)
+    expect(result).toContain("## Feedback #1")
     expect(result).not.toContain("## Component Tree")
     expect(result).not.toContain("- **Attributes**:")
   })
@@ -116,20 +117,21 @@ describe("generateBatchPresetOutput", () => {
     expect(result).not.toContain("**Props**")
   })
 
-  it("minimal routes to the most trimmed batch Markdown", () => {
+  it("minimal routes to the batch Feedback Report format", () => {
     const result = generateBatchPresetOutput("minimal", batchInput)
+    expect(result.startsWith("---\n\n# Feedback Report\n")).toBe(true)
+    expect(result).toContain("## Feedback #1")
     expect(result).not.toContain("- **Component**:")
   })
 
-  it.each(OUTPUT_PRESETS)(
-    "single pin copy (%s): one annotation renders without throwing",
-    (preset: OutputPreset) => {
-      const singlePin: BatchInput = {
-        pageUrl: batchInput.pageUrl,
-        pageTitle: batchInput.pageTitle,
-        annotations: [batchInput.annotations[0]],
-      }
-      expect(() => generateBatchPresetOutput(preset, singlePin)).not.toThrow()
+  it.each(
+    OUTPUT_PRESETS
+  )("single pin copy (%s): one annotation renders without throwing", (preset: OutputPreset) => {
+    const singlePin: BatchInput = {
+      pageUrl: batchInput.pageUrl,
+      pageTitle: batchInput.pageTitle,
+      annotations: [batchInput.annotations[0]],
     }
-  )
+    expect(() => generateBatchPresetOutput(preset, singlePin)).not.toThrow()
+  })
 })

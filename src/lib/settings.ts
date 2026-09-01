@@ -1,7 +1,10 @@
 /** Persisted user settings stored in `chrome.storage.local`. */
 
 import { OUTPUT_PRESETS } from "./output-presets"
-import { isCustomPresetValue, type SelectedOutputPreset } from "./output-templates"
+import {
+  isCustomPresetValue,
+  type SelectedOutputPreset,
+} from "./output-templates"
 import type { OutputPreset } from "./types"
 
 export const IFRAME_SELECTION_KEY = "tegakariIframeSelection"
@@ -23,7 +26,8 @@ function isOutputPreset(value: unknown): value is OutputPreset {
 // once rendering is attempted.
 function isSelectedOutputPreset(value: unknown): value is SelectedOutputPreset {
   return (
-    typeof value === "string" && (isOutputPreset(value) || isCustomPresetValue(value))
+    typeof value === "string" &&
+    (isOutputPreset(value) || isCustomPresetValue(value))
   )
 }
 
@@ -42,16 +46,16 @@ export function setIframeSelection(enabled: boolean): void {
 }
 
 /**
- * Read the preferred output preset (defaults to "jsonl"). Accepts any of the
+ * Read the preferred output preset (defaults to "minimal"). Accepts any of the
  * 5 built-in preset ids or a `custom:<templateId>` reference; a value
  * persisted by an older build ("jsonl"/"markdown") is still valid and loads
- * unchanged. Unknown/corrupt values fall back to jsonl.
+ * unchanged. Unknown/corrupt values fall back to minimal.
  */
 export async function loadOutputPreset(): Promise<SelectedOutputPreset> {
   return new Promise((resolve) => {
     chrome.storage.local.get(OUTPUT_FORMAT_KEY, (result) => {
       const value = result[OUTPUT_FORMAT_KEY]
-      resolve(isSelectedOutputPreset(value) ? value : "jsonl")
+      resolve(isSelectedOutputPreset(value) ? value : "minimal")
     })
   })
 }

@@ -16,7 +16,7 @@ The generated text is copied to the clipboard and pasted into an AI editor such 
 
 ## Output Formats
 
-In addition to the five built-in output presets (`jsonl` / `markdown` / `claude-code` / `cursor` / `minimal`) available from the Toolbar dropdown, a user-defined [custom template](#custom-templates) can also be selected. The result is copied to the clipboard for use. The default is `jsonl`. See [Output Presets](#output-presets) for details on each preset.
+In addition to the five built-in output presets (`jsonl` / `markdown` / `claude-code` / `cursor` / `minimal`) available from the Toolbar dropdown, a user-defined [custom template](#custom-templates) can also be selected. The result is copied to the clipboard for use. The default is `minimal`. See [Output Presets](#output-presets) for details on each preset.
 
 ## Section Structure
 
@@ -46,7 +46,7 @@ The pin's popover places six fixed category chips around the instruction text ar
 - When the popover is closed and reopened, the selection state is restored
 - Reflected in the output (the content uses the `id` as-is, not the display label):
   - **JSONL**: adds `"tags":["spacing","color"]` to the `annotation` object (if empty, the `tags` key itself is omitted)
-  - **Markdown** (common to full/cursor/minimal): adds `**Tags**: spacing, color` immediately after the `**Instruction**` line (if empty, the line itself is omitted)
+  - **Markdown** (common to full/cursor; omitted by minimal, which uses the [Feedback Report format](#minimal-preset-format)): adds `**Tags**: spacing, color` immediately after the `**Instruction**` line (if empty, the line itself is omitted)
   - **claude-code (XML)**: adds `<tags>spacing, color</tags>` immediately after `<instruction>` (output at this position even when instruction is empty but tags exist; omitted if tags is empty)
 
 #### Style changes (On-page Style Adjustment Mode)
@@ -58,7 +58,7 @@ The pin's popover has an adjustment panel, opened via the "Adjust styles" toggle
 - On revisiting the page (when pins are restored), the preview is not automatically reapplied. The record (styleDelta) remains, but the appearance stays as-is; opening the popover restores the saved values into the rows
 - Reflected in the output:
   - **JSONL**: adds `"styleDelta":[{"property":"margin","before":"16px","after":"8px"}]` to the `annotation` object (if empty, the `styleDelta` key itself is omitted)
-  - **Markdown** (common to full/cursor/minimal): adds the following immediately after the `**Tags**` line (the section is omitted entirely if there is no styleDelta)
+  - **Markdown** (common to full/cursor; omitted by minimal, which uses the [Feedback Report format](#minimal-preset-format)): adds the following immediately after the `**Tags**` line (the section is omitted entirely if there is no styleDelta)
     ```
     **Style changes**:
       - margin: 16px → 8px
@@ -185,7 +185,7 @@ Expresses **instructions that span two elements**, such as "align the spacing be
 
 **Output condition**: **batch output only** (not included in single-copy or individual pin copy). If there are no relations, the corresponding section/line/tag is not output at all, in any of the formats below.
 
-- **Markdown** (common to full/cursor/minimal): appended after all `## Annotation` sections
+- **Markdown** (common to full/cursor; omitted by minimal, which uses the [Feedback Report format](#minimal-preset-format)): appended after all `## Annotation` sections
   ```
   ## Relations
   - [#1 ↔ #2] Make the spacing between these equal
@@ -326,7 +326,37 @@ In the Toolbar's format dropdown, in addition to the Markdown/JSONL described ab
 | `markdown` | Markdown | The existing full output |
 | `claude-code` | XML tag structure | The XML wrapper format described below. Also serves as the auto-trigger marker for the tegakari-fix skill |
 | `cursor` | Markdown | A condensed version. Page Context has only url/title/framework (batch metadata is omitted); Component Tree has only names (up to the 3 levels nearest the selected element) and Source, with Props/State omitted |
-| `minimal` | Markdown | The minimal version. Page Context has only the URL; Selected Element has only selector/tag/class/text (Attributes as a whole, Styles, CSS Rules/CSS Variables, and Component Tree are omitted). For conserving tokens |
+| `minimal` | Markdown (own structure) | A review-comment style **Feedback Report** (the default). The instruction is quoted; the element is reduced to four lines — Element/Selector/Classes/Text. Attributes as a whole, Styles, CSS Rules/CSS Variables, Component Tree, Tags, Style changes and Relations are omitted. See [minimal Preset Format](#minimal-preset-format) below |
+
+### minimal Preset Format
+
+Produced by `src/lib/feedback-generator.ts`. Unlike the other presets it does not reuse the Markdown generator's section structure; it has its own review-comment shape.
+
+```
+[repo=my-app]            ← only when a prefix rule matches
+---
+
+# Feedback Report
+URL: <page URL>
+
+## Feedback #1
+> the user's instruction text
+
+- Element: `<button>`
+- Selector: `button.btn`
+- Classes: btn, btn-ghost, btn-lg, btn-block
+- Text: "Sign in with another account"
+
+## Feedback #2
+...
+```
+
+- The section number `#N` is the annotation's `id` (it matches the pin number on the page, not the position in the array)
+- Each line of the instruction is prefixed with `> `, so multi-line text stays quoted. When the instruction is empty the blockquote is dropped entirely and only the heading remains
+- `Classes` is the `class` attribute split on whitespace and joined with commas (no code-mark decoration). When the element has no classes the line is omitted
+- When `Text` is empty its line is omitted. `Element` and `Selector` are always emitted
+- With zero annotations only the header (`---` through `URL:`) is emitted
+- The prefix rule (`[repo=...]`) goes above the `---`, at the very top of the output
 
 ### claude-code Preset Format
 
@@ -379,7 +409,7 @@ In addition to the five built-in presets, users can define their own output form
 - **Rendering**: render `header` → render each `annotation` in order → trim leading/trailing whitespace from each part, drop any parts that become empty, then join with `\n\n`. The prefix rule (`[repo=...]`) is automatically prepended to the top of the output as before **only if** the `header` template does not contain `{{prefix}}` (if it does, the user's placement is respected)
 - **Placeholders** (mustache-like `{{key}}`. No conditionals or loops. Replaced with an empty string if the value is absent; unknown placeholders are left as-is. No escaping is performed)
   - For `header`: `{{prefix}}` `{{page.url}}` `{{page.title}}` `{{page.framework}}` `{{page.metaFramework}}` `{{annotationCount}}`
-  - For `annotation`: `{{id}}` `{{instruction}}` `{{tags}}` (comma-separated) `{{selector}}` `{{tag}}` `{{text}}` `{{attributes}}` (a group of `key: value` lines) `{{styles}}` (a group of `key: value` lines) `{{component.hierarchy}}` (`A → B → C`) `{{component.name}}` (the leaf component's name) `{{component.source}}` `{{component.props}}` (JSON string)
+  - For `annotation`: `{{id}}` `{{instruction}}` `{{tags}}` (comma-separated) `{{selector}}` `{{tag}}` `{{classes}}` (comma-separated, undecorated) `{{text}}` `{{attributes}}` (a group of `key: value` lines) `{{styles}}` (a group of `key: value` lines) `{{component.hierarchy}}` (`A → B → C`) `{{component.name}}` (the leaf component's name) `{{component.source}}` `{{component.props}}` (JSON string)
   - In v1, no placeholders are provided for `styleDelta` (Style changes), `cssRules`, `customProperties`, or Relations
 - **Fallback behavior**: if, at copy time, the template entity referenced by `custom:<id>` cannot be found (e.g. it was deleted), it falls back to the `jsonl` preset's batch output
 - Import/Export: a JSON array of `OutputTemplate[]`. Invalid elements are skipped with a warning (following the same import behavior as Prefix Rules)
