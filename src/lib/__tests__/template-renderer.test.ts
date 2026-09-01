@@ -24,7 +24,10 @@ function makeAnnotation(overrides: Partial<Annotation> = {}): Annotation {
       attributes: { class: "app", "data-testid": "main" },
       styles: { display: "flex" },
     },
-    frameworkInfo: { framework: "React", metaFramework: "Next.js (App Router)" },
+    frameworkInfo: {
+      framework: "React",
+      metaFramework: "Next.js (App Router)",
+    },
     componentInfo: {
       framework: "react",
       hierarchy: ["App", "Layout", "Header"],
@@ -70,8 +73,7 @@ describe("renderOutputTemplate: header placeholders", () => {
 
   it("resolves header placeholders to empty string when data is absent", () => {
     const template = makeTemplate({
-      header:
-        "[{{prefix}}][{{page.framework}}][{{page.metaFramework}}]",
+      header: "[{{prefix}}][{{page.framework}}][{{page.metaFramework}}]",
       annotation: "x",
     })
     const input: BatchInput = {
@@ -96,6 +98,7 @@ describe("renderOutputTemplate: annotation placeholders (values present)", () =>
         "tags={{tags}}",
         "selector={{selector}}",
         "tag={{tag}}",
+        "classes={{classes}}",
         "text={{text}}",
         "attributes={{attributes}}",
         "styles={{styles}}",
@@ -113,6 +116,7 @@ describe("renderOutputTemplate: annotation placeholders (values present)", () =>
     expect(output).toContain("tags=spacing, color")
     expect(output).toContain("selector=#app > div")
     expect(output).toContain("tag=div")
+    expect(output).toContain("classes=app")
     expect(output).toContain("text=Hello")
     expect(output).toContain("attributes=class: app\ndata-testid: main")
     expect(output).toContain("styles=display: flex")
@@ -217,7 +221,10 @@ describe("renderOutputTemplate: trim + join + empty-part filtering", () => {
 
   it("renders an empty string when both header and every annotation are empty", () => {
     const template = makeTemplate({ header: "", annotation: "" })
-    const output = renderOutputTemplate(template, makeInput({ prefix: undefined }))
+    const output = renderOutputTemplate(
+      template,
+      makeInput({ prefix: undefined })
+    )
     expect(output).toBe("")
   })
 })
@@ -232,7 +239,10 @@ describe("renderOutputTemplate: prefix auto-injection", () => {
   })
 
   it("does not prepend the prefix when the header already places {{prefix}}", () => {
-    const template = makeTemplate({ header: "before {{prefix}} after", annotation: "A" })
+    const template = makeTemplate({
+      header: "before {{prefix}} after",
+      annotation: "A",
+    })
     const input = makeInput({ prefix: "[repo=my-app]" })
     expect(renderOutputTemplate(template, input)).toBe(
       "before [repo=my-app] after\n\nA"
@@ -248,7 +258,48 @@ describe("renderOutputTemplate: prefix auto-injection", () => {
 
   it("does not prepend anything when there is no matched prefix", () => {
     const template = makeTemplate({ header: "H", annotation: "A" })
-    const output = renderOutputTemplate(template, makeInput({ prefix: undefined }))
+    const output = renderOutputTemplate(
+      template,
+      makeInput({ prefix: undefined })
+    )
     expect(output).toBe("H\n\nA")
+  })
+})
+
+describe("renderOutputTemplate: {{classes}}", () => {
+  it("renders multiple classes comma-separated and undecorated", () => {
+    const template = makeTemplate({ annotation: "{{classes}}" })
+    const input = makeInput({
+      annotations: [
+        makeAnnotation({
+          elementInfo: {
+            selector: "button.btn",
+            tag: "button",
+            text: "",
+            attributes: { class: "btn btn-ghost btn-lg" },
+          },
+        }),
+      ],
+    })
+
+    expect(renderOutputTemplate(template, input)).toBe("btn, btn-ghost, btn-lg")
+  })
+
+  it("renders an empty string when the element has no class attribute", () => {
+    const template = makeTemplate({ annotation: "classes=[{{classes}}]" })
+    const input = makeInput({
+      annotations: [
+        makeAnnotation({
+          elementInfo: {
+            selector: "div",
+            tag: "div",
+            text: "",
+            attributes: {},
+          },
+        }),
+      ],
+    })
+
+    expect(renderOutputTemplate(template, input)).toBe("classes=[]")
   })
 })

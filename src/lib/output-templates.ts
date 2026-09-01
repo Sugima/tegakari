@@ -18,7 +18,10 @@ export interface OutputTemplate {
   annotation: string
 }
 
-const STORAGE_KEY = "tegakariOutputTemplates"
+/** `chrome.storage.local` key holding the template list. Exported so
+ * subscribers (e.g. the Toolbar dropdown) can narrow `storage.onChanged`
+ * to template edits instead of reloading on every unrelated write. */
+export const OUTPUT_TEMPLATES_KEY = "tegakariOutputTemplates"
 
 /** Maximum number of templates that can be stored. */
 export const MAX_OUTPUT_TEMPLATES = 10
@@ -52,8 +55,8 @@ export function createTemplateId(): string {
 
 export async function loadOutputTemplates(): Promise<OutputTemplate[]> {
   try {
-    const result = await chrome.storage.local.get(STORAGE_KEY)
-    const value = result[STORAGE_KEY]
+    const result = await chrome.storage.local.get(OUTPUT_TEMPLATES_KEY)
+    const value = result[OUTPUT_TEMPLATES_KEY]
     return Array.isArray(value) ? value : []
   } catch {
     return []
@@ -71,7 +74,7 @@ export async function saveOutputTemplates(
 ): Promise<void> {
   try {
     const capped = templates.slice(0, MAX_OUTPUT_TEMPLATES)
-    await chrome.storage.local.set({ [STORAGE_KEY]: capped })
+    await chrome.storage.local.set({ [OUTPUT_TEMPLATES_KEY]: capped })
   } catch {
     // silently fail
   }
@@ -153,7 +156,10 @@ export function parseOutputTemplates(text: string): ParsedTemplatesResult {
 
 type ParsedTemplateEntry = { template: OutputTemplate } | { error: string }
 
-function parseTemplateEntry(entry: unknown, label: string): ParsedTemplateEntry {
+function parseTemplateEntry(
+  entry: unknown,
+  label: string
+): ParsedTemplateEntry {
   if (typeof entry !== "object" || entry === null) {
     return { error: `${label}: not an object` }
   }

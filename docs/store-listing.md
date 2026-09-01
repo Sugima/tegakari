@@ -47,7 +47,7 @@ Chrome拡張機能です。
 - コンポーネントのソース位置（file:line）を解決して出力（dev build で取得可能な場合）
 - Next.js / Nuxt / SvelteKit などのメタフレームワークを検出
 - ページメタデータ（Viewport, UserAgent, Language）を収集
-- 出力形式を選択してコピー — JSONL / Markdown に加え、Claude Code 向け・Cursor 向け・トークン節約用のMinimalプリセット、さらに自分のワークフロー向けのカスタムテンプレートも定義可能
+- 出力形式を選択してコピー — レビューコメント形式のMinimal（Feedback Report、デフォルト）に加え、JSONL / Markdown / Claude Code 向け / Cursor 向けのプリセット、さらに自分のワークフロー向けのカスタムテンプレートも定義可能
 - 全アノテーションのスクリーンショットを1枚の画像としてまとめてコピー
 - アノテーションセットを JSON ファイル（tegakari-annotations-*.json）として書き出し / 読み込み（共有・バックアップ）
 - URLパターン別のプレフィックス設定（例: [repo=my-app]）

@@ -16,7 +16,7 @@ Chrome拡張機能「tegakari」は、Webページ上の要素を選択し、そ
 
 ## 出力形式
 
-Toolbarのドロップダウンから5つの組み込み出力プリセット（`jsonl` / `markdown` / `claude-code` / `cursor` / `minimal`）に加え、ユーザーが定義した[カスタムテンプレート](#カスタムテンプレート)を選択できる。クリップボードにコピーして使用する。デフォルトは`jsonl`。各プリセットの詳細は[出力プリセット](#出力プリセット)を参照。
+Toolbarのドロップダウンから5つの組み込み出力プリセット（`jsonl` / `markdown` / `claude-code` / `cursor` / `minimal`）に加え、ユーザーが定義した[カスタムテンプレート](#カスタムテンプレート)を選択できる。クリップボードにコピーして使用する。デフォルトは`minimal`。各プリセットの詳細は[出力プリセット](#出力プリセット)を参照。
 
 ## セクション構成
 
@@ -46,7 +46,7 @@ Toolbarのドロップダウンから5つの組み込み出力プリセット（
 - ポップオーバーを閉じて再度開いたとき、選択状態が復元される
 - 出力への反映（内容は`id`をそのまま使用し、表示ラベルではない）:
   - **JSONL**: `annotation`オブジェクトに`"tags":["spacing","color"]`を追加（空なら`tags`キー自体を省略）
-  - **Markdown**（full/cursor/minimal共通）: `**Instruction**`行の直後に`**Tags**: spacing, color`を追加（空なら行ごと省略）
+  - **Markdown**（full/cursor共通。minimalは[Feedback Report形式](#minimalプリセットの形式)のため省略）: `**Instruction**`行の直後に`**Tags**: spacing, color`を追加（空なら行ごと省略）
   - **claude-code（XML）**: `<instruction>`の直後に`<tags>spacing, color</tags>`を追加（instructionが空でtagsのみある場合もこの位置に出力し、tagsが空なら省略）
 
 #### Style changes（ページ上スタイル調整モード）
@@ -58,7 +58,7 @@ Toolbarのドロップダウンから5つの組み込み出力プリセット（
 - ページ再訪時（ピン復元時）にプレビューは自動再適用しない。記録（styleDelta）は残るが見た目は素のままで、ポップオーバーを開くと保存済みの値が行に復元される
 - 出力への反映:
   - **JSONL**: `annotation`オブジェクトに`"styleDelta":[{"property":"margin","before":"16px","after":"8px"}]`を追加（空なら`styleDelta`キー自体を省略）
-  - **Markdown**（full/cursor/minimal共通）: `**Tags**`行の直後に以下を追加（styleDeltaが無ければセクションごと省略）
+  - **Markdown**（full/cursor共通。minimalは[Feedback Report形式](#minimalプリセットの形式)のため省略）: `**Tags**`行の直後に以下を追加（styleDeltaが無ければセクションごと省略）
     ```
     **Style changes**:
       - margin: 16px → 8px
@@ -185,7 +185,7 @@ Styles（computed styleの差分）だけでは、その値が**どのCSSルー�
 
 **出力条件**: **バッチ出力のみ**（単体コピー・個別ピンコピーには含まれない）。リレーションが1件も無ければ、以下いずれの形式でも該当セクション/行/タグを一切出力しない。
 
-- **Markdown**（full/cursor/minimal共通）: 全 `## Annotation` セクションの後に追加
+- **Markdown**（full/cursor共通。minimalは[Feedback Report形式](#minimalプリセットの形式)のため省略）: 全 `## Annotation` セクションの後に追加
   ```
   ## Relations
   - [#1 ↔ #2] Make the spacing between these equal
@@ -326,7 +326,37 @@ Toolbarの形式ドロップダウンでは、上記のMarkdown/JSONLに加え�
 | `markdown` | Markdown | 既存のフル出力 |
 | `claude-code` | XMLタグ構造 | 下記のXMLラッパー形式。tegakari-fixスキルの自動起動マーカーを兼ねる |
 | `cursor` | Markdown | 簡潔版。Page Contextはurl/title/frameworkのみ（バッチ時のmetadataは省略）、Component Treeは名前（選択要素に近い最大3階層）とSourceのみでProps/Stateは省略 |
-| `minimal` | Markdown | 最小版。Page ContextはURLのみ、Selected Elementはselector/tag/class/textのみ（Attributes全体・Styles・CSS Rules/CSS Variables・Component Treeは省略）。トークン節約用 |
+| `minimal` | Markdown（独自構造） | レビューコメント形式の**Feedback Report**（デフォルト）。指示を引用、要素はElement/Selector/Classes/Textの4行のみ。Attributes全体・Styles・CSS Rules/CSS Variables・Component Tree・Tags・Style changes・Relationsは省略。下記[minimalプリセットの形式](#minimalプリセットの形式)参照 |
+
+### minimalプリセットの形式
+
+`src/lib/feedback-generator.ts`が生成する。他のプリセットと違い、Markdown生成器のセクション構造ではなく専用のレビューコメント形式を持つ。
+
+```
+[repo=my-app]            ← プレフィックスルールがマッチした場合のみ
+---
+
+# Feedback Report
+URL: <ページURL>
+
+## Feedback #1
+> ユーザー指示テキスト
+
+- Element: `<button>`
+- Selector: `button.btn`
+- Classes: `btn, btn-ghost, btn-lg, btn-block`
+- Text: "別のアカウントでログインする"
+
+## Feedback #2
+...
+```
+
+- セクション番号`#N`はアノテーションの`id`（ページ上のピン番号と一致する。配列内の位置ではない）
+- 指示テキストは各行の先頭に`> `を付ける（複数行でも引用が崩れない）。指示が空の場合は引用ブロックごと省略し、見出しは残す
+- `Classes`は`class`属性を空白で分割してカンマ区切りにし、リスト全体を1つのコード記法（バッククォート）で囲む。クラスが無い場合は行ごと省略
+- `Text`が空の場合は行ごと省略。`Element`と`Selector`は常に出力される
+- アノテーションが0件の場合はヘッダー（`---`〜`URL:`）のみを出力する
+- プレフィックスルール（`[repo=...]`）は`---`より前、出力全体の先頭に付与される
 
 ### claude-code プリセットの形式
 
@@ -379,7 +409,7 @@ Toolbarの形式ドロップダウンでは、上記のMarkdown/JSONLに加え�
 - **描画**: `header`を描画 → 各`annotation`を順に描画 → それぞれ前後の空白をtrimし、空になったパートは除いてから`\n\n`で連結する。プレフィックスルール（`[repo=...]`）は、`header`テンプレートに`{{prefix}}`が**含まれない場合のみ**従来どおり出力全体の先頭に自動付与される（含まれる場合はユーザーの配置を尊重）
 - **プレースホルダー**（mustache風`{{key}}`。条件分岐・ループは無し。値が無い場合は空文字に置換、未知のプレースホルダーはそのまま残す。エスケープ処理は行わない）
   - `header`用: `{{prefix}}` `{{page.url}}` `{{page.title}}` `{{page.framework}}` `{{page.metaFramework}}` `{{annotationCount}}`
-  - `annotation`用: `{{id}}` `{{instruction}}` `{{tags}}`（カンマ区切り） `{{selector}}` `{{tag}}` `{{text}}` `{{attributes}}`（`key: value`の行群） `{{styles}}`（`key: value`の行群） `{{component.hierarchy}}`（`A → B → C`） `{{component.name}}`（末端のコンポーネント名） `{{component.source}}` `{{component.props}}`（JSON文字列）
+  - `annotation`用: `{{id}}` `{{instruction}}` `{{tags}}`（カンマ区切り） `{{selector}}` `{{tag}}` `{{classes}}`（カンマ区切り。装飾なし） `{{text}}` `{{attributes}}`（`key: value`の行群） `{{styles}}`（`key: value`の行群） `{{component.hierarchy}}`（`A → B → C`） `{{component.name}}`（末端のコンポーネント名） `{{component.source}}` `{{component.props}}`（JSON文字列）
   - v1では`styleDelta`（Style changes）・`cssRules`・`customProperties`・Relations用のプレースホルダーは提供しない
 - **フォールバック挙動**: コピー時に`custom:<id>`が参照するテンプレート実体が見つからない場合（削除済みなど）は、`jsonl`プリセットのバッチ出力にフォールバックする
 - Import/Export: `OutputTemplate[]`のJSON配列。不正な要素はスキップされ警告される（Prefix Rulesのインポート挙動を踏襲）

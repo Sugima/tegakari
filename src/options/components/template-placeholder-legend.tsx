@@ -20,6 +20,7 @@ const ANNOTATION_PLACEHOLDERS = [
   "{{tags}}",
   "{{selector}}",
   "{{tag}}",
+  "{{classes}}",
   "{{text}}",
   "{{attributes}}",
   "{{styles}}",
@@ -32,7 +33,9 @@ const ANNOTATION_PLACEHOLDERS = [
 export function TemplatePlaceholderLegend({ theme }: { theme: Theme }) {
   return (
     <div style={{ marginBottom: 16, fontSize: 12, color: theme.textMuted }}>
-      <div style={{ fontWeight: 600, marginBottom: 8, color: theme.textSecondary }}>
+      <div
+        style={{ fontWeight: 600, marginBottom: 8, color: theme.textSecondary }}
+      >
         {t("options_templates_legend_title")}
       </div>
       <PlaceholderGroup
@@ -59,7 +62,15 @@ function PlaceholderGroup({
   theme: Theme
 }) {
   return (
-    <div style={{ display: "flex", gap: 8, marginBottom: 6, flexWrap: "wrap", alignItems: "center" }}>
+    <div
+      style={{
+        display: "flex",
+        gap: 8,
+        marginBottom: 6,
+        flexWrap: "wrap",
+        alignItems: "center",
+      }}
+    >
       <span style={{ flexShrink: 0, minWidth: 70 }}>{label}:</span>
       {tokens.map((token) => (
         <code key={token} style={chipStyle(theme)}>
