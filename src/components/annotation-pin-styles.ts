@@ -56,6 +56,11 @@ export function popoverStyle(
     top: resolveTop(y, height ?? ESTIMATED_POPOVER_HEIGHT, viewportHeight),
     maxHeight,
     overflowY: "auto",
+    // `overflow-y: auto` cannot coexist with a visible `overflow-x` — the
+    // browser promotes the other axis to `auto` too, which put a horizontal
+    // scrollbar under the Save button. The popover has a fixed width and its
+    // children are width-constrained, so nothing needs to scroll sideways.
+    overflowX: "hidden",
   }
 }
 

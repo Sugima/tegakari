@@ -49,11 +49,20 @@ it("popoverStyle: clamps to the top margin when the popover is taller than the v
   expect(style.maxHeight).toBe(344)
 })
 
-it("popoverStyle: caps the height to the viewport and allows scrolling", () => {
+it("popoverStyle: caps the height to the viewport and allows vertical scrolling", () => {
   setViewport(1200, 500)
   const style = popoverStyle({ x: 100, y: 100 }, 400)
   expect(style.maxHeight).toBe(484)
   expect(style.overflowY).toBe("auto")
+})
+
+// `overflow-y: auto` promotes a visible `overflow-x` to `auto` as well, which
+// showed a horizontal scrollbar under the Save button.
+it("popoverStyle: never scrolls horizontally", () => {
+  setViewport(1200, 900)
+  expect(popoverStyle({ x: 100, y: 100 }, 400).overflowX).toBe("hidden")
+  setViewport(1200, 360)
+  expect(popoverStyle({ x: 100, y: 40 }, 500).overflowX).toBe("hidden")
 })
 
 it("popoverStyle: falls back to the estimated height before measurement", () => {

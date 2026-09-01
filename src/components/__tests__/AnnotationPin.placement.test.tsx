@@ -102,6 +102,7 @@ it("AnnotationPin: keeps the whole popover on screen in a short viewport", () =>
   expect(top).toBeGreaterThanOrEqual(0)
   expect(top + Math.min(POPOVER_HEIGHT, maxHeight)).toBeLessThanOrEqual(420)
   expect(popover.style.overflowY).toBe("auto")
+  expect(popover.style.overflowX).toBe("hidden")
 })
 
 it("AnnotationPin: accounts for page scroll when placing the popover", () => {
