@@ -11,10 +11,9 @@ import {
   iconButtonStyle,
   idBadgeStyle,
   linkButtonStyle,
-  pinMarkerStyle,
   type PinMarkerState,
+  pinMarkerStyle,
   popoverContainerStyle,
-  popoverStyle,
   popoverTextareaStyle,
   saveButtonStyle,
   tagCodeStyle,
@@ -23,6 +22,7 @@ import {
 import InstructionChips from "./instruction-chips"
 import StyleTweakPanel from "./style-tweak-panel"
 import { useAnnotationDraft } from "./use-annotation-draft"
+import { usePinPopoverPlacement } from "./use-pin-popover-placement"
 
 interface UpdatePayload {
   instruction: string
@@ -72,6 +72,7 @@ export default function AnnotationPin(props: Props) {
     x: annotation.pageX - window.scrollX,
     y: annotation.pageY - window.scrollY,
   }
+  const placement = usePinPopoverPlacement(pos, isActive)
 
   return (
     <>
@@ -96,7 +97,7 @@ export default function AnnotationPin(props: Props) {
           onToggleTag={handleToggleTag}
           onStyleDeltaChange={setDraftStyleDelta}
           textareaRef={textareaRef}
-          style={popoverStyle(pos)}
+          placement={placement}
           onSave={handleSave}
           onDelete={props.onDelete}
           onDeselect={onDeselect}
@@ -123,7 +124,8 @@ function PinMarker({ pos, id, theme, state, onActivate }: PinMarkerProps) {
         e.stopPropagation()
         onActivate()
       }}
-      style={pinMarkerStyle(theme, pos, state)}>
+      style={pinMarkerStyle(theme, pos, state)}
+    >
       {id}
     </div>
   )
@@ -138,7 +140,10 @@ interface PinPopoverProps {
   onToggleTag: (id: string) => void
   onStyleDeltaChange: (styleDelta: StyleDelta[] | undefined) => void
   textareaRef: RefObject<HTMLTextAreaElement>
-  style: CSSProperties
+  placement: {
+    ref: RefObject<HTMLDivElement>
+    style: CSSProperties
+  }
   onSave: () => void
   onDelete: (id: number) => void
   onDeselect: () => void
@@ -154,7 +159,7 @@ function PinPopover({
   onToggleTag,
   onStyleDeltaChange,
   textareaRef,
-  style,
+  placement,
   onSave,
   onDelete,
   onDeselect,
@@ -162,10 +167,13 @@ function PinPopover({
 }: PinPopoverProps) {
   return (
     <div
+      ref={placement.ref}
+      data-testid={`tegakari-popover-${annotation.id}`}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={stopOverlayKeyPropagation}
       onKeyUp={stopOverlayKeyPropagation}
-      style={{ ...style, ...popoverContainerStyle(theme) }}>
+      style={{ ...popoverContainerStyle(theme), ...placement.style }}
+    >
       <PinPopoverHeader
         annotation={annotation}
         theme={theme}
@@ -185,7 +193,11 @@ function PinPopover({
           style={thumbnailStyle(theme)}
         />
       )}
-      <InstructionChips theme={theme} selected={draftTags} onToggle={onToggleTag} />
+      <InstructionChips
+        theme={theme}
+        selected={draftTags}
+        onToggle={onToggleTag}
+      />
       <textarea
         ref={textareaRef}
         value={draft}
@@ -242,7 +254,8 @@ function PinPopoverHeader({
         <button
           onClick={onStartLink}
           title="Link to another pin"
-          style={linkButtonStyle(theme)}>
+          style={linkButtonStyle(theme)}
+        >
           Link
         </button>
         <IconButton title="Delete" onClick={onDelete}>

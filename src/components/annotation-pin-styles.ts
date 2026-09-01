@@ -7,17 +7,73 @@ interface Point {
   y: number
 }
 
-export function popoverStyle({ x, y }: Point): CSSProperties {
-  const popoverWidth = 280
-  const flipLeft = x + 30 + popoverWidth > window.innerWidth
-  const popoverTop = y + 28
-  const flipUp = popoverTop + 200 > window.innerHeight
+export const POPOVER_WIDTH = 280
+
+/** Gap kept between the popover and the viewport edges. */
+const VIEWPORT_MARGIN = 8
+
+/** Horizontal offset from the pin marker to the popover. */
+const PIN_OFFSET_X = 28
+
+/** Vertical offset used when the popover opens below the pin. */
+const PIN_OFFSET_Y = 28
+
+/**
+ * Height assumed before the popover has been measured, used for the very first
+ * paint only. Intentionally generous: the real popover is roughly this tall
+ * once the screenshot, chips, textarea, style panel and Save button are laid
+ * out, and over-estimating flips it to a spot where it fits, while
+ * under-estimating leaves the Save button below the fold.
+ */
+export const ESTIMATED_POPOVER_HEIGHT = 400
+
+/**
+ * Fixed-position placement for a pin's popover.
+ *
+ * `height` is the popover's measured height (see `usePinPopoverPlacement`);
+ * pass `null` before the first measurement. Placement prefers below the pin,
+ * flips above when it doesn't fit there, and — when neither side has room, e.g.
+ * a short viewport — clamps into the viewport and lets the popover scroll, so
+ * the Save button is always reachable.
+ */
+export function popoverStyle(
+  { x, y }: Point,
+  height: number | null = null
+): CSSProperties {
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  // Horizontal placement is unchanged: to the right of the pin, flipping to
+  // its left when the popover would run past the right edge.
+  const flipLeft = x + 30 + POPOVER_WIDTH > viewportWidth
+  const maxHeight = Math.max(0, viewportHeight - VIEWPORT_MARGIN * 2)
+
   return {
     position: "fixed",
-    width: popoverWidth,
-    ...(flipLeft ? { right: window.innerWidth - x + 8 } : { left: x + 28 }),
-    ...(flipUp ? { bottom: window.innerHeight - y + 8 } : { top: popoverTop }),
+    width: POPOVER_WIDTH,
+    ...(flipLeft
+      ? { right: viewportWidth - x + VIEWPORT_MARGIN }
+      : { left: x + PIN_OFFSET_X }),
+    top: resolveTop(y, height ?? ESTIMATED_POPOVER_HEIGHT, viewportHeight),
+    maxHeight,
+    overflowY: "auto",
   }
+}
+
+/**
+ * Vertical position: below the pin when it fits, above when that fits instead,
+ * otherwise clamped so the whole popover (capped at the viewport height) stays
+ * on screen.
+ */
+function resolveTop(y: number, height: number, viewportHeight: number): number {
+  const below = y + PIN_OFFSET_Y
+  if (below + height + VIEWPORT_MARGIN <= viewportHeight) return below
+
+  const above = y - VIEWPORT_MARGIN - height
+  if (above >= VIEWPORT_MARGIN) return above
+
+  const capped = Math.min(height, viewportHeight - VIEWPORT_MARGIN * 2)
+  const bottomAligned = viewportHeight - VIEWPORT_MARGIN - capped
+  return Math.max(VIEWPORT_MARGIN, bottomAligned)
 }
 
 export interface PinMarkerState {
