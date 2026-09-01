@@ -109,6 +109,12 @@ function PresetMenu({
 
 // Close the menu on any click outside the trigger/menu, e.g. picking a page
 // element while the dropdown was left open.
+//
+// The check has to walk `composedPath()`, not `e.target`: this listener sits on
+// the document while the menu lives in Plasmo's shadow DOM, so `e.target` is
+// retargeted to the shadow host. Comparing against that host classified every
+// in-menu mousedown as "outside" and closed the menu before the click could
+// reach an option — the menu opened but nothing could be selected.
 function useCloseOnOutsideClick(
   ref: RefObject<HTMLElement>,
   active: boolean,
@@ -117,7 +123,8 @@ function useCloseOnOutsideClick(
   useEffect(() => {
     if (!active) return
     const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+      const container = ref.current
+      if (container && !e.composedPath().includes(container)) onClose()
     }
     document.addEventListener("mousedown", handler, true)
     return () => document.removeEventListener("mousedown", handler, true)

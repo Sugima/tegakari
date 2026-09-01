@@ -90,3 +90,73 @@ it("PresetDropdown: shows the template name on the trigger when one is selected"
     "My Template"
   )
 })
+
+// The overlay renders inside Plasmo's shadow DOM, so a document-level
+// listener sees events retargeted to the shadow host — never to the node
+// inside the menu that was actually clicked. An outside-click check based on
+// `contains(e.target)` therefore treated every in-menu mousedown as "outside",
+// closing the menu before the click could land on an option.
+function renderInShadowDom(ui: Parameters<typeof render>[0]) {
+  const host = document.createElement("div")
+  document.body.appendChild(host)
+  const shadow = host.attachShadow({ mode: "open" })
+  const container = document.createElement("div")
+  shadow.appendChild(container)
+  render(ui, { container })
+  return shadow
+}
+
+function optionIn(shadow: ShadowRoot, name: string): HTMLElement {
+  const match = Array.from(
+    shadow.querySelectorAll<HTMLElement>('[role="option"]')
+  ).find((el) => el.textContent === name)
+  if (!match) throw new Error(`no option named ${name}`)
+  return match
+}
+
+it("PresetDropdown: selecting a preset works when rendered inside a shadow root", async () => {
+  const user = userEvent.setup()
+  const onPresetChange = vi.fn()
+
+  const shadow = renderInShadowDom(
+    <PresetDropdown
+      theme={darkTheme}
+      preset="minimal"
+      customTemplates={[]}
+      onPresetChange={onPresetChange}
+    />
+  )
+
+  const trigger = shadow.querySelector<HTMLElement>('[title="Output preset"]')
+  if (!trigger) throw new Error("no trigger")
+  await user.click(trigger)
+
+  await user.click(optionIn(shadow, "Markdown"))
+
+  expect(onPresetChange).toHaveBeenCalledWith("markdown")
+})
+
+it("PresetDropdown: a click outside the shadow-hosted menu still closes it", async () => {
+  const user = userEvent.setup()
+
+  const shadow = renderInShadowDom(
+    <PresetDropdown
+      theme={darkTheme}
+      preset="minimal"
+      customTemplates={[]}
+      onPresetChange={vi.fn()}
+    />
+  )
+
+  const trigger = shadow.querySelector<HTMLElement>('[title="Output preset"]')
+  if (!trigger) throw new Error("no trigger")
+  await user.click(trigger)
+  expect(shadow.querySelectorAll('[role="option"]').length).toBeGreaterThan(0)
+
+  const outside = document.createElement("button")
+  outside.textContent = "elsewhere"
+  document.body.appendChild(outside)
+  await user.click(outside)
+
+  expect(shadow.querySelectorAll('[role="option"]').length).toBe(0)
+})
