@@ -60,7 +60,7 @@ it("generateBatchFeedback: renders the full report shape for multiple annotation
   const result = generateBatchFeedback(
     makeBatch({
       annotations: [
-        makeAnnotation(),
+        makeAnnotation({ tags: ["spacing", "color"] }),
         makeAnnotation({
           id: 2,
           instruction: "連絡先メールアドレスは出さない。",
@@ -85,6 +85,7 @@ it("generateBatchFeedback: renders the full report shape for multiple annotation
       "## Feedback #1",
       "> このボタンにもGoogleアイコンを出す。",
       "",
+      "- Tags: `spacing, color`",
       "- Element: `<button>`",
       "- Selector: `button.btn`",
       "- Classes: `btn, btn-ghost, btn-lg, btn-block`",
@@ -160,16 +161,14 @@ it("generateBatchFeedback: drops the sections that the full Markdown output woul
     makeBatch({
       annotations: [
         makeAnnotation({
-          tags: ["spacing"],
           componentInfo: { hierarchy: ["App", "LoginButton"] },
-          elementInfo: makeElement({ styles: { color: "rgb(0, 0, 0)" } }),
+          elementInfo: makeElement({ styles: { display: "flex" } }),
         }),
       ],
     })
   )
-  expect(result).not.toContain("Tags")
   expect(result).not.toContain("Component")
-  expect(result).not.toContain("color")
+  expect(result).not.toContain("display")
   expect(result).not.toContain("type")
 })
 
@@ -196,4 +195,31 @@ it("generateFeedback: renders a single element as Feedback #1", () => {
       '- Text: "別のアカウントでログインする"',
     ].join("\n")
   )
+})
+
+it("generateBatchFeedback: puts the Tags line above the element lines", () => {
+  const result = generateBatchFeedback(
+    makeBatch({ annotations: [makeAnnotation({ tags: ["spacing", "color"] })] })
+  )
+  expect(result).toContain(
+    "- Tags: `spacing, color`\n- Element: `<button>`\n- Selector:"
+  )
+})
+
+it("generateBatchFeedback: omits the Tags line when no chip is selected", () => {
+  const noTags = generateBatchFeedback(
+    makeBatch({ annotations: [makeAnnotation()] })
+  )
+  const emptyTags = generateBatchFeedback(
+    makeBatch({ annotations: [makeAnnotation({ tags: [] })] })
+  )
+  expect(noTags).not.toContain("- Tags:")
+  expect(emptyTags).not.toContain("- Tags:")
+})
+
+it("generateBatchFeedback: emits tag ids verbatim, not their display labels", () => {
+  const result = generateBatchFeedback(
+    makeBatch({ annotations: [makeAnnotation({ tags: ["remove"] })] })
+  )
+  expect(result).toContain("- Tags: `remove`")
 })

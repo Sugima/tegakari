@@ -46,7 +46,8 @@ Toolbarのドロップダウンから5つの組み込み出力プリセット（
 - ポップオーバーを閉じて再度開いたとき、選択状態が復元される
 - 出力への反映（内容は`id`をそのまま使用し、表示ラベルではない）:
   - **JSONL**: `annotation`オブジェクトに`"tags":["spacing","color"]`を追加（空なら`tags`キー自体を省略）
-  - **Markdown**（full/cursor共通。minimalは[Feedback Report形式](#minimalプリセットの形式)のため省略）: `**Instruction**`行の直後に`**Tags**: spacing, color`を追加（空なら行ごと省略）
+  - **Markdown**（full/cursor共通）: `**Instruction**`行の直後に`**Tags**: spacing, color`を追加（空なら行ごと省略）
+  - **minimal（Feedback Report）**: 引用ブロックの直後・`- Element:`行の上に`- Tags: \`spacing, color\``を追加（空なら行ごと省略。[minimalプリセットの形式](#minimalプリセットの形式)参照）
   - **claude-code（XML）**: `<instruction>`の直後に`<tags>spacing, color</tags>`を追加（instructionが空でtagsのみある場合もこの位置に出力し、tagsが空なら省略）
 
 #### Style changes（ページ上スタイル調整モード）
@@ -326,7 +327,7 @@ Toolbarの形式ドロップダウンでは、上記のMarkdown/JSONLに加え�
 | `markdown` | Markdown | 既存のフル出力 |
 | `claude-code` | XMLタグ構造 | 下記のXMLラッパー形式。tegakari-fixスキルの自動起動マーカーを兼ねる |
 | `cursor` | Markdown | 簡潔版。Page Contextはurl/title/frameworkのみ（バッチ時のmetadataは省略）、Component Treeは名前（選択要素に近い最大3階層）とSourceのみでProps/Stateは省略 |
-| `minimal` | Markdown（独自構造） | レビューコメント形式の**Feedback Report**（デフォルト）。指示を引用、要素はElement/Selector/Classes/Textの4行のみ。Attributes全体・Styles・CSS Rules/CSS Variables・Component Tree・Tags・Style changes・Relationsは省略。下記[minimalプリセットの形式](#minimalプリセットの形式)参照 |
+| `minimal` | Markdown（独自構造） | レビューコメント形式の**Feedback Report**（デフォルト）。指示を引用、続けてTagsと要素のElement/Selector/Classes/Textの行のみ。Attributes全体・Styles・CSS Rules/CSS Variables・Component Tree・Style changes・Relationsは省略。下記[minimalプリセットの形式](#minimalプリセットの形式)参照 |
 
 ### minimalプリセットの形式
 
@@ -342,6 +343,7 @@ URL: <ページURL>
 ## Feedback #1
 > ユーザー指示テキスト
 
+- Tags: `spacing, color`
 - Element: `<button>`
 - Selector: `button.btn`
 - Classes: `btn, btn-ghost, btn-lg, btn-block`
@@ -353,6 +355,7 @@ URL: <ページURL>
 
 - セクション番号`#N`はアノテーションの`id`（ページ上のピン番号と一致する。配列内の位置ではない）
 - 指示テキストは各行の先頭に`> `を付ける（複数行でも引用が崩れない）。指示が空の場合は引用ブロックごと省略し、見出しは残す
+- `Tags`は選択されたクイック指示チップの`id`をカンマ区切りにし、リスト全体を1つのコード記法で囲む（表示ラベルではない）。要素の各行より上に置く。タグが無い場合は行ごと省略
 - `Classes`は`class`属性を空白で分割してカンマ区切りにし、リスト全体を1つのコード記法（バッククォート）で囲む。クラスが無い場合は行ごと省略
 - `Text`が空の場合は行ごと省略。`Element`と`Selector`は常に出力される
 - アノテーションが0件の場合はヘッダー（`---`〜`URL:`）のみを出力する

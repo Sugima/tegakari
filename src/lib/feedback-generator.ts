@@ -1,9 +1,10 @@
 /**
  * The `minimal` preset: a compact review-comment report. One heading per
- * annotation, the user's instruction as a blockquote, and just enough element
- * identity underneath to find the node again (element / selector / classes /
- * text). Everything the full Markdown output carries beyond that — attributes,
- * styles, CSS provenance, component tree, relations — is deliberately dropped.
+ * annotation, the user's instruction as a blockquote, the selected
+ * quick-instruction tags, and just enough element identity underneath to find
+ * the node again (element / selector / classes / text). Everything the full
+ * Markdown output carries beyond that — attributes, styles, CSS provenance,
+ * component tree, relations — is deliberately dropped.
  *
  * See `docs/output-spec.md#minimal-プリセットの形式` for the contract.
  */
@@ -34,27 +35,48 @@ function elementLines(el: ElementInfo): string[] {
   ]
 }
 
-function feedbackSection(
-  index: number,
-  instruction: string,
+interface Section {
+  index: number
+  instruction: string
   elementInfo: ElementInfo
-): string {
+  /** Quick-instruction chip ids; omitted or empty means "no tags". */
+  tags?: string[]
+}
+
+function feedbackSection({
+  index,
+  instruction,
+  elementInfo,
+  tags,
+}: Section): string {
   const quote = blockquote(instruction)
   const head = quote
     ? `## Feedback #${index}\n${quote}`
     : `## Feedback #${index}`
-  return `${head}\n\n${elementLines(elementInfo).join("\n")}`
+  const tagList = tags?.join(", ") ?? ""
+  const lines = [
+    ...(tagList ? [`- Tags: \`${tagList}\``] : []),
+    ...elementLines(elementInfo),
+  ]
+  return `${head}\n\n${lines.join("\n")}`
 }
 
 function header(pageUrl: string): string {
   return `${HEADER}\nURL: ${pageUrl}`
 }
 
-/** Single-element output. Always numbered `#1` — there is only one section. */
+/**
+ * Single-element output. Always numbered `#1` — there is only one section.
+ * `MarkdownInput` carries no tags, so no Tags line is emitted on this path.
+ */
 export function generateFeedback(input: MarkdownInput): string {
   return [
     header(input.pageUrl),
-    feedbackSection(1, input.instruction, input.elementInfo),
+    feedbackSection({
+      index: 1,
+      instruction: input.instruction,
+      elementInfo: input.elementInfo,
+    }),
   ].join("\n\n")
 }
 
@@ -66,11 +88,12 @@ export function generateFeedback(input: MarkdownInput): string {
  */
 export function generateBatchFeedback(input: BatchInput): string {
   const sections = input.annotations.map((annotation) =>
-    feedbackSection(
-      annotation.id,
-      annotation.instruction,
-      annotation.elementInfo
-    )
+    feedbackSection({
+      index: annotation.id,
+      instruction: annotation.instruction,
+      elementInfo: annotation.elementInfo,
+      tags: annotation.tags,
+    })
   )
   const body = [header(input.pageUrl), ...sections].join("\n\n")
   return input.prefix ? `${input.prefix}\n\n${body}` : body
