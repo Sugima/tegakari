@@ -169,7 +169,10 @@ it("generateBatchFeedback: drops the sections that the full Markdown output woul
     makeBatch({
       annotations: [
         makeAnnotation({
-          componentInfo: { hierarchy: ["App", "LoginButton"] },
+          componentInfo: {
+            framework: "react",
+            hierarchy: ["App", "LoginButton"],
+          },
           elementInfo: makeElement({ styles: { display: "flex" } }),
         }),
       ],
