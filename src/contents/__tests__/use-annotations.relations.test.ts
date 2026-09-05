@@ -120,7 +120,13 @@ it("useAnnotations: deleting an annotation cascades to its relations", () => {
 
   act(() => result.current.handleDeleteAnnotation(b.id))
 
-  expect(result.current.annotations.map((x) => x.id)).toEqual([a.id, c.id])
+  // What's left is renumbered to 1..N (see `~lib/annotation-order`), so `c`
+  // takes over `b`'s number.
+  expect(result.current.annotations.map((x) => x.elementInfo.selector)).toEqual([
+    a.elementInfo.selector,
+    c.elementInfo.selector,
+  ])
+  expect(result.current.annotations.map((x) => x.id)).toEqual([1, 2])
   expect(result.current.relations).toEqual([])
 })
 

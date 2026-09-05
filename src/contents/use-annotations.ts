@@ -7,6 +7,12 @@ import {
 } from "react"
 
 import {
+  createAnnotationUid,
+  normalizeAnnotationOrder,
+  remapRelationIds,
+  renumberAnnotations,
+} from "~lib/annotation-order"
+import {
   collectPageMetadata,
   loadAnnotationStore,
   updateAnnotations,
@@ -29,8 +35,7 @@ export function useAnnotations() {
   const [annotations, setAnnotations] = useState<Annotation[]>([])
   const [activeId, setActiveId] = useState<number | null>(null)
   const [metadata, setMetadata] = useState<PageMetadata | null>(null)
-  const nextIdRef = useRef(1)
-  const pendingIdRef = useRef<number | null>(null)
+  const pendingUidRef = useRef<string | null>(null)
   const { relations, setRelations, nextRelationIdRef } = useRelationState()
 
   const persist = usePersist(metadata)
@@ -43,16 +48,19 @@ export function useAnnotations() {
     setAnnotations,
     setRelations,
     setMetadata,
-    nextIdRef,
     nextRelationIdRef,
   })
-  const addAnnotation = useAddAnnotation({ mutate, setActiveId, nextIdRef, pendingIdRef })
+  const addAnnotation = useAddAnnotation({
+    mutate,
+    setActiveId,
+    pendingUidRef,
+    count: annotations.length,
+  })
   const actions = useAnnotationActions({
     mutate,
     setAnnotations,
     setRelations,
     setActiveId,
-    nextIdRef,
     nextRelationIdRef,
     annotations,
     relations,
@@ -63,7 +71,7 @@ export function useAnnotations() {
     relations,
     nextRelationIdRef,
   })
-  useResultListener({ mutate, setMetadata, pendingIdRef })
+  useResultListener({ mutate, setMetadata, pendingUidRef })
 
   return {
     annotations,
@@ -97,9 +105,14 @@ interface MutateDeps {
 
 /**
  * Applies an annotations transform and (optionally) a relations transform
- * together, then persists both as a single atomic write — this is what makes
- * cross-cutting changes like cascade-delete-on-annotation-delete correct
- * without stale closures or extra ref bookkeeping.
+ * together, renumbers the result, then persists both as a single atomic write
+ * — this is what makes cross-cutting changes like
+ * cascade-delete-on-annotation-delete correct without stale closures or extra
+ * ref bookkeeping.
+ *
+ * Renumbering lives here so every path (add, delete, reorder, import, edit)
+ * keeps the "`id` is the 1..N list position" invariant, with relation
+ * endpoints remapped through the very same renumbering.
  */
 function useMutate({ setAnnotations, setRelations, persist }: MutateDeps): Mutate {
   return useCallback(
@@ -108,9 +121,11 @@ function useMutate({ setAnnotations, setRelations, persist }: MutateDeps): Mutat
       relTransform: (prev: Relation[]) => Relation[] = (r) => r
     ) => {
       setAnnotations((prevAnn) => {
-        const updatedAnn = annTransform(prevAnn)
+        const { annotations: updatedAnn, idMap } = renumberAnnotations(
+          annTransform(prevAnn)
+        )
         setRelations((prevRel) => {
-          const updatedRel = relTransform(prevRel)
+          const updatedRel = remapRelationIds(relTransform(prevRel), idMap)
           persist(updatedAnn, updatedRel)
           return updatedRel
         })
@@ -125,7 +140,6 @@ interface LoadPersistedDeps {
   setAnnotations: (anns: Annotation[]) => void
   setRelations: (rels: Relation[]) => void
   setMetadata: (meta: PageMetadata | null) => void
-  nextIdRef: MutableRefObject<number>
   nextRelationIdRef: MutableRefObject<number>
 }
 
@@ -133,45 +147,48 @@ function useLoadPersisted({
   setAnnotations,
   setRelations,
   setMetadata,
-  nextIdRef,
   nextRelationIdRef,
 }: LoadPersistedDeps) {
   return useCallback(async () => {
     const store = await loadAnnotationStore(location.href)
     if (store && store.annotations.length > 0) {
-      setAnnotations(store.annotations)
-      nextIdRef.current = Math.max(...store.annotations.map((a) => a.id)) + 1
+      // Data stored before renumbering existed can carry gaps (1, 2, 4, …);
+      // normalizing on load is what closes them.
+      const normalized = normalizeAnnotationOrder(
+        store.annotations,
+        store.relations ?? []
+      )
+      setAnnotations(normalized.annotations)
       setMetadata(store.metadata)
-      const rels = store.relations ?? []
-      setRelations(rels)
+      setRelations(normalized.relations)
       nextRelationIdRef.current =
-        rels.length > 0 ? Math.max(...rels.map((r) => r.id)) + 1 : 1
+        normalized.relations.length > 0
+          ? Math.max(...normalized.relations.map((r) => r.id)) + 1
+          : 1
     }
-  }, [setAnnotations, setRelations, setMetadata, nextIdRef, nextRelationIdRef])
+  }, [setAnnotations, setRelations, setMetadata, nextRelationIdRef])
 }
 
 interface AddDeps {
   mutate: Mutate
   setActiveId: (id: number) => void
-  nextIdRef: MutableRefObject<number>
-  pendingIdRef: MutableRefObject<number | null>
+  pendingUidRef: MutableRefObject<string | null>
+  /** Current annotation count — a new pin is appended, so its id is count + 1. */
+  count: number
 }
 
-function useAddAnnotation({
-  mutate,
-  setActiveId,
-  nextIdRef,
-  pendingIdRef,
-}: AddDeps) {
+function useAddAnnotation({ mutate, setActiveId, pendingUidRef, count }: AddDeps) {
   return useCallback(
     (target: Element, point: Point, options?: AddAnnotationOptions) => {
       const info = buildElementInfo(target, generateSelector(target))
-      const id = nextIdRef.current++
+      const uid = createAnnotationUid()
+      const id = count + 1
       // For elements inside an iframe the caller passes a rect already
       // translated to top-viewport coords (matches the captured screenshot).
       const boundingRect = options?.viewportRect ?? target.getBoundingClientRect()
       const annotation: Annotation = {
         id,
+        uid,
         elementInfo: info,
         frameworkInfo: null,
         componentInfo: null,
@@ -182,27 +199,30 @@ function useAddAnnotation({
       }
       mutate((prev) => [...prev, annotation])
       setActiveId(id)
-      attachScreenshot(id, boundingRect, mutate)
+      attachScreenshot(uid, boundingRect, mutate)
 
       // Main-World framework collection is not injected inside iframes, so skip
       // the round-trip for iframe elements (frameworkInfo stays null).
       if (options?.skipFramework) return
-      pendingIdRef.current = id
+      pendingUidRef.current = uid
       window.postMessage(
         { type: "TEGAKARI_COLLECT", selector: info.selector },
         "*"
       )
     },
-    [mutate, setActiveId, nextIdRef, pendingIdRef]
+    [mutate, setActiveId, pendingUidRef, count]
   )
 }
 
-function attachScreenshot(id: number, rect: Rect, mutate: Mutate) {
+// Targets `uid`, not `id`: a delete or a reorder while the capture is in
+// flight renumbers the list, and the id this started with would then land on
+// somebody else's pin.
+function attachScreenshot(uid: string, rect: Rect, mutate: Mutate) {
   captureScreenshot().then(async (full) => {
     if (!full) return
     const cropped = await cropToElement(full, rect)
     mutate((prev) =>
-      prev.map((a) => (a.id === id ? { ...a, screenshot: cropped } : a))
+      prev.map((a) => (a.uid === uid ? { ...a, screenshot: cropped } : a))
     )
   })
 }
@@ -210,22 +230,22 @@ function attachScreenshot(id: number, rect: Rect, mutate: Mutate) {
 interface ResultDeps {
   mutate: Mutate
   setMetadata: (updater: (prev: PageMetadata | null) => PageMetadata | null) => void
-  pendingIdRef: MutableRefObject<number | null>
+  pendingUidRef: MutableRefObject<string | null>
 }
 
-function useResultListener({ mutate, setMetadata, pendingIdRef }: ResultDeps) {
+function useResultListener({ mutate, setMetadata, pendingUidRef }: ResultDeps) {
   useEffect(() => {
     const handler = (event: MessageEvent) => {
       if (event.source !== window) return
       if (event.data?.type !== "TEGAKARI_RESULT") return
       const result = event.data as CollectResult
-      const pendingId = pendingIdRef.current
-      if (pendingId === null) return
-      pendingIdRef.current = null
+      const pendingUid = pendingUidRef.current
+      if (pendingUid === null) return
+      pendingUidRef.current = null
 
       mutate((prev) =>
         prev.map((a) =>
-          a.id === pendingId
+          a.uid === pendingUid
             ? { ...a, frameworkInfo: result.framework, componentInfo: result.component }
             : a
         )
@@ -236,5 +256,5 @@ function useResultListener({ mutate, setMetadata, pendingIdRef }: ResultDeps) {
     }
     window.addEventListener("message", handler)
     return () => window.removeEventListener("message", handler)
-  }, [mutate, setMetadata, pendingIdRef])
+  }, [mutate, setMetadata, pendingUidRef])
 }

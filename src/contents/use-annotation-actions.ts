@@ -1,5 +1,11 @@
 import { type MutableRefObject, useCallback } from "react"
 
+import {
+  createAnnotationUid,
+  idAfterDelete,
+  idAfterMove,
+  moveAnnotation,
+} from "~lib/annotation-order"
 import { clearAllAnnotations } from "~lib/annotation-store"
 import { cascadeDeleteRelations } from "~lib/relations"
 import { revertAnnotationStylePreview } from "~lib/style-preview"
@@ -33,7 +39,6 @@ interface ActionDeps {
   setAnnotations: (anns: Annotation[]) => void
   setRelations: (rels: Relation[]) => void
   setActiveId: (updater: (prev: number | null) => number | null) => void
-  nextIdRef: MutableRefObject<number>
   nextRelationIdRef: MutableRefObject<number>
   annotations: Annotation[]
   relations: Relation[]
@@ -44,7 +49,6 @@ export function useAnnotationActions({
   setAnnotations,
   setRelations,
   setActiveId,
-  nextIdRef,
   nextRelationIdRef,
   annotations,
   relations,
@@ -60,13 +64,24 @@ export function useAnnotationActions({
     (id: number) => {
       const target = annotations.find((a) => a.id === id)
       if (target) revertAnnotationStylePreview(target)
+      // `mutate` renumbers what's left to 1..N, so the ids the rest of the UI
+      // holds move down with it (see `~lib/annotation-order`).
       mutate(
         (prev) => prev.filter((a) => a.id !== id),
         (prev) => cascadeDeleteRelations(prev, id)
       )
-      setActiveId((prev) => (prev === id ? null : prev))
+      setActiveId((prev) => (prev === null ? null : idAfterDelete(prev, id)))
     },
     [mutate, setActiveId, annotations]
+  )
+
+  const handleReorderAnnotations = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (fromIndex === toIndex) return
+      mutate((prev) => moveAnnotation(prev, fromIndex, toIndex))
+      setActiveId((prev) => (prev === null ? null : idAfterMove(prev, fromIndex, toIndex)))
+    },
+    [mutate, setActiveId]
   )
 
   const handleClearAll = useCallback(async () => {
@@ -74,21 +89,43 @@ export function useAnnotationActions({
     setAnnotations([])
     setRelations([])
     setActiveId(() => null)
-    nextIdRef.current = 1
     nextRelationIdRef.current = 1
     await clearAllAnnotations(location.href)
-  }, [setAnnotations, setRelations, setActiveId, nextIdRef, nextRelationIdRef, annotations])
+  }, [setAnnotations, setRelations, setActiveId, nextRelationIdRef, annotations])
 
-  // Append imported annotations (renumbered to avoid id collisions) and any
-  // relations among them (remapped through the same id renumbering, see
-  // `~lib/relations`).
-  const handleImportAnnotations = useCallback(
+  const handleImportAnnotations = useImportAnnotations({
+    mutate,
+    relations,
+    nextRelationIdRef,
+  })
+
+  return {
+    handleUpdateInstruction,
+    handleDeleteAnnotation,
+    handleReorderAnnotations,
+    handleClearAll,
+    handleImportAnnotations,
+  }
+}
+
+interface ImportDeps {
+  mutate: Mutate
+  relations: Relation[]
+  nextRelationIdRef: MutableRefObject<number>
+}
+
+function useImportAnnotations({ mutate, relations, nextRelationIdRef }: ImportDeps) {
+  // Append imported annotations and any relations among them. Imported ids are
+  // first staged as negatives — they cannot collide with the existing (always
+  // positive) ids, which keeps the relation remapping unambiguous — and
+  // `mutate` then renumbers the whole list into 1..N.
+  return useCallback(
     (imported: Annotation[], importedRelations: Relation[] = []) => {
       const idMap = new Map<number, number>()
-      const renumbered = imported.map((a) => {
-        const newId = nextIdRef.current++
-        idMap.set(a.id, newId)
-        return { ...a, id: newId }
+      const renumbered = imported.map((a, index) => {
+        const stagedId = -(index + 1)
+        idMap.set(a.id, stagedId)
+        return { ...a, id: stagedId, uid: a.uid ?? createAnnotationUid() }
       })
       const remapped = buildImportedRelations({
         importedRelations,
@@ -101,13 +138,6 @@ export function useAnnotationActions({
         (prev) => [...prev, ...remapped]
       )
     },
-    [mutate, nextIdRef, relations, nextRelationIdRef]
+    [mutate, relations, nextRelationIdRef]
   )
-
-  return {
-    handleUpdateInstruction,
-    handleDeleteAnnotation,
-    handleClearAll,
-    handleImportAnnotations,
-  }
 }

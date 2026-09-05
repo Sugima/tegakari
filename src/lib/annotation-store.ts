@@ -31,11 +31,15 @@ export async function saveAnnotationStore(
 ): Promise<void> {
   try {
     const key = storageKey(store.url)
-    // Enforce max limit — drop oldest first
+    // Enforce max limit — drop the oldest, keeping the user's list order
+    // (annotations are ordered manually, see `~lib/annotation-order`).
     if (store.annotations.length > MAX_ANNOTATIONS) {
-      store.annotations
-        .sort((a, b) => a.createdAt - b.createdAt)
-        .splice(0, store.annotations.length - MAX_ANNOTATIONS)
+      const dropped = new Set(
+        [...store.annotations]
+          .sort((a, b) => a.createdAt - b.createdAt)
+          .slice(0, store.annotations.length - MAX_ANNOTATIONS)
+      )
+      store.annotations = store.annotations.filter((a) => !dropped.has(a))
     }
     await chrome.storage.local.set({ [key]: store })
   } catch {

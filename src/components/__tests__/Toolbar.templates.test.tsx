@@ -64,6 +64,7 @@ function renderToolbar() {
       relations={[]}
       onSelectAnnotation={vi.fn()}
       onDeleteAnnotation={vi.fn()}
+      onReorderAnnotations={vi.fn()}
       onDeleteRelation={vi.fn()}
       onClearAll={vi.fn()}
       onClose={vi.fn()}

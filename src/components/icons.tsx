@@ -97,3 +97,16 @@ export function CloseIcon({ color, size = 14 }: IconProps) {
     </svg>
   )
 }
+
+export function GripIcon({ color, size = 12 }: IconProps) {
+  return (
+    <svg {...svgProps(size, color)} strokeWidth={2.5}>
+      <circle cx="9" cy="5" r="0.5" />
+      <circle cx="9" cy="12" r="0.5" />
+      <circle cx="9" cy="19" r="0.5" />
+      <circle cx="15" cy="5" r="0.5" />
+      <circle cx="15" cy="12" r="0.5" />
+      <circle cx="15" cy="19" r="0.5" />
+    </svg>
+  )
+}
