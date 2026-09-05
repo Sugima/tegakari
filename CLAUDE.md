@@ -76,6 +76,7 @@ Content Script - Isolated World
 | `markdown-generator.ts` | 収集情報をMarkdown形式にフォーマット（単体・バッチ両対応） |
 | `jsonl-generator.ts` | 収集情報をJSONL形式にフォーマット（単体・バッチ両対応） |
 | `serialize.ts` | Fiber/Vue内部オブジェクトの安全なシリアライズ（深度・キー数・配列長制限） |
+| `annotation-order.ts` | アノテーション番号の振り直し（表示順で1..N、欠番なし）・並び替え・安定ID（`uid`）の生成 |
 | `annotation-store.ts` | アノテーションのURL単位永続化（`chrome.storage.local`、上限50件） |
 | `prefix-rules.ts` | URLパターン→プレフィックスのルール管理・マッチング・JSONシリアライズ |
 | `theme.ts` | ダーク/ライトテーマ定義、ThemeContext、`chrome.storage.local`で永続化 |
@@ -84,7 +85,7 @@ Content Script - Isolated World
 ### UIコンポーネント（src/components/）
 
 - `Toolbar.tsx`: 画面下部の操作バー。Inbox開閉、一括コピー、フォーマット切替（JSONL/MD）、拡張OFF
-- `InboxPanel.tsx` + `annotation-row.tsx`: アノテーション一覧パネル。プレフィックス入力、個別コピー・削除、全削除
+- `InboxPanel.tsx` + `annotation-list.tsx` + `annotation-row.tsx`: アノテーション一覧パネル。プレフィックス入力、個別コピー・削除、全削除、行のドラッグ&ドロップ並び替え
 - `AnnotationPin.tsx`: 各アノテーションの番号付きピン（クリック位置に配置）。ポップオーバーで指示テキスト編集
 - `HighlightBox.tsx`: マウスオーバー時の要素ハイライト表示
 - `icons.tsx`: SVGアイコン集

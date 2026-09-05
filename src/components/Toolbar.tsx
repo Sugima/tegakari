@@ -37,6 +37,7 @@ interface Props {
   relations: Relation[]
   onSelectAnnotation: (id: number) => void
   onDeleteAnnotation: (id: number) => void
+  onReorderAnnotations: (fromIndex: number, toIndex: number) => void
   onDeleteRelation: (id: number) => void
   onClearAll: () => void
   onClose: () => void
@@ -77,6 +78,7 @@ export default function Toolbar(props: Props) {
           onSelectAnnotation={props.onSelectAnnotation}
           onCopyItem={t.handleCopyItem}
           onDeleteAnnotation={props.onDeleteAnnotation}
+          onReorderAnnotations={props.onReorderAnnotations}
           onDeleteRelation={props.onDeleteRelation}
           onClearAll={props.onClearAll}
           onImportAnnotations={props.onImportAnnotations}

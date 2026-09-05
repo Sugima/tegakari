@@ -89,7 +89,9 @@ it("annotation-store: saves and loads a store using a normalized URL key", async
   ).resolves.toEqual(store)
 })
 
-it("annotation-store: limits saved annotations to the newest 50", async () => {
+it("annotation-store: limits saved annotations to the newest 50, keeping list order", async () => {
+  // Reverse order: the list is ordered manually (see `~lib/annotation-order`),
+  // so trimming must drop the oldest without re-sorting what's left.
   const annotations = Array.from({ length: 55 }, (_, idx) =>
     annotation(55 - idx)
   )
@@ -97,8 +99,8 @@ it("annotation-store: limits saved annotations to the newest 50", async () => {
 
   const saved = storage[storageKey(metadata.url)] as AnnotationStore
   expect(saved.annotations).toHaveLength(50)
-  expect(saved.annotations[0].id).toBe(6)
-  expect(saved.annotations.at(-1)?.id).toBe(55)
+  expect(saved.annotations[0].id).toBe(55)
+  expect(saved.annotations.at(-1)?.id).toBe(6)
 })
 
 it("annotation-store: updates and clears annotations", async () => {

@@ -124,10 +124,19 @@ export function emptyStyle(theme: Theme): CSSProperties {
   }
 }
 
+/** Where the drop indicator line sits relative to the hovered row. */
+export type DropEdge = "top" | "bottom" | null
+
+export interface RowDragState {
+  /** This row is the one being dragged. */
+  dragging: boolean
+  dropEdge: DropEdge
+}
+
 export function rowStyle(
   theme: Theme,
   selected: boolean,
-  archived: boolean
+  drag: RowDragState = { dragging: false, dropEdge: null }
 ): CSSProperties {
   return {
     padding: "10px 16px",
@@ -137,10 +146,26 @@ export function rowStyle(
     borderLeft: selected
       ? `3px solid ${theme.activeIndicator}`
       : "3px solid transparent",
+    // The drop line is drawn as a box-shadow so it never shifts the row's
+    // height while the pointer moves across the list.
+    boxShadow:
+      drag.dropEdge === "top"
+        ? `inset 0 2px 0 0 ${theme.accent}`
+        : drag.dropEdge === "bottom"
+          ? `inset 0 -2px 0 0 ${theme.accent}`
+          : "none",
     cursor: "pointer",
     transition: "background-color 0.12s",
-    opacity: archived ? 0.6 : 1,
+    opacity: drag.dragging ? 0.4 : 1,
   }
+}
+
+export const gripStyle: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  flexShrink: 0,
+  cursor: "grab",
+  marginLeft: -6,
 }
 
 export function rowHeaderStyle(hasInstruction: boolean): CSSProperties {

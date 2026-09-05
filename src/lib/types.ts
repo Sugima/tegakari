@@ -99,7 +99,17 @@ export interface StyleDelta {
 }
 
 export interface Annotation {
+  /**
+   * Display number. Always `index + 1` in list order — deleting or reordering
+   * renumbers every annotation so the numbering has no gaps (see
+   * `~lib/annotation-order`). Use `uid` when a stable reference is needed.
+   */
   id: number
+  /**
+   * Stable identity, unaffected by renumbering. Backfilled on load/import, so
+   * it is always present at runtime and optional only for legacy stored data.
+   */
+  uid?: string
   elementInfo: ElementInfo
   frameworkInfo: FrameworkInfo | null
   componentInfo: ComponentInfo | null

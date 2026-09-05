@@ -66,6 +66,7 @@ export default function Overlay() {
         relations={ann.relations}
         onSelectAnnotation={ann.setActiveId}
         onDeleteAnnotation={ann.handleDeleteAnnotation}
+        onReorderAnnotations={ann.handleReorderAnnotations}
         onDeleteRelation={ann.deleteRelation}
         onClearAll={ann.handleClearAll}
         onClose={close}

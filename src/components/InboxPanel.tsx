@@ -5,14 +5,12 @@ import { stopOverlayKeyPropagation } from "~lib/overlay-keys"
 import { type Theme, useTheme } from "~lib/theme"
 import type { Annotation, PageMetadata, Relation } from "~lib/types"
 
-import { AnnotationRow } from "./annotation-row"
+import { AnnotationList } from "./annotation-list"
 import { RelationRow } from "./relation-row"
 import { ShareBar } from "./share-bar"
 import {
   clearButtonStyle,
-  emptyStyle,
   headerStyle,
-  listStyle,
   panelStyle,
   prefixInputStyle,
   prefixRowStyle,
@@ -32,6 +30,7 @@ interface Props {
   onSelectAnnotation: (id: number) => void
   onCopyItem: (annotation: Annotation) => void
   onDeleteAnnotation: (id: number) => void
+  onReorderAnnotations: (fromIndex: number, toIndex: number) => void
   onDeleteRelation: (id: number) => void
   onClearAll: () => void
   onImportAnnotations: (imported: Annotation[], relations?: Relation[]) => void
@@ -66,7 +65,15 @@ export default function InboxPanel(props: Props) {
         matchedPrefix={props.matchedPrefix}
         onPrefixChange={props.onPrefixChange}
       />
-      <AnnotationList theme={theme} items={props.annotations} props={props} />
+      <AnnotationList
+        annotations={props.annotations}
+        activeAnnotationId={props.activeAnnotationId}
+        copiedItemId={props.copiedItemId}
+        onSelectAnnotation={props.onSelectAnnotation}
+        onCopyItem={props.onCopyItem}
+        onDeleteAnnotation={props.onDeleteAnnotation}
+        onReorderAnnotations={props.onReorderAnnotations}
+      />
       <RelationsSection
         theme={theme}
         relations={props.relations}
@@ -174,42 +181,6 @@ function PrefixInput({
             : theme.border
         }}
       />
-    </div>
-  )
-}
-
-function AnnotationList({
-  theme,
-  items,
-  props,
-}: {
-  theme: Theme
-  items: Annotation[]
-  props: Props
-}) {
-  if (items.length === 0) {
-    return (
-      <div style={listStyle}>
-        <div style={emptyStyle(theme)}>
-          Click elements on the page to annotate
-        </div>
-      </div>
-    )
-  }
-
-  return (
-    <div style={listStyle}>
-      {items.map((annotation) => (
-        <AnnotationRow
-          key={annotation.id}
-          annotation={annotation}
-          isSelected={props.activeAnnotationId === annotation.id}
-          copiedItemId={props.copiedItemId}
-          onSelect={() => props.onSelectAnnotation(annotation.id)}
-          onCopy={() => props.onCopyItem(annotation)}
-          onDelete={() => props.onDeleteAnnotation(annotation.id)}
-        />
-      ))}
     </div>
   )
 }
