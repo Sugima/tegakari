@@ -31,14 +31,20 @@ export type Mutate = (
   relTransform?: (prev: Relation[]) => Relation[]
 ) => void
 
-export function useAnnotations() {
+/**
+ * @param persistEnabled Mirrors the "keep annotations across page reloads"
+ *   setting. While it is false nothing is written to or read from
+ *   `chrome.storage` — annotations live only in this tab's memory, so a
+ *   reload starts empty. Already-stored pages are left untouched.
+ */
+export function useAnnotations(persistEnabled = true) {
   const [annotations, setAnnotations] = useState<Annotation[]>([])
   const [activeId, setActiveId] = useState<number | null>(null)
   const [metadata, setMetadata] = useState<PageMetadata | null>(null)
   const pendingUidRef = useRef<string | null>(null)
   const { relations, setRelations, nextRelationIdRef } = useRelationState()
 
-  const persist = usePersist(metadata)
+  const persist = usePersist(metadata, persistEnabled)
   const mutate = useMutate({ setAnnotations, setRelations, persist })
   const mutateRelations = useCallback(
     (transform: (prev: Relation[]) => Relation[]) => mutate((a) => a, transform),
@@ -49,6 +55,7 @@ export function useAnnotations() {
     setRelations,
     setMetadata,
     nextRelationIdRef,
+    persistEnabled,
   })
   const addAnnotation = useAddAnnotation({
     mutate,
@@ -87,13 +94,14 @@ export function useAnnotations() {
   }
 }
 
-function usePersist(metadata: PageMetadata | null): Persist {
+function usePersist(metadata: PageMetadata | null, persistEnabled: boolean): Persist {
   return useCallback(
     async (anns: Annotation[], relations: Relation[]) => {
+      if (!persistEnabled) return
       const meta = metadata ?? collectPageMetadata(null)
       await updateAnnotations(location.href, { metadata: meta, annotations: anns, relations })
     },
-    [metadata]
+    [metadata, persistEnabled]
   )
 }
 
@@ -141,6 +149,7 @@ interface LoadPersistedDeps {
   setRelations: (rels: Relation[]) => void
   setMetadata: (meta: PageMetadata | null) => void
   nextRelationIdRef: MutableRefObject<number>
+  persistEnabled: boolean
 }
 
 function useLoadPersisted({
@@ -148,8 +157,10 @@ function useLoadPersisted({
   setRelations,
   setMetadata,
   nextRelationIdRef,
+  persistEnabled,
 }: LoadPersistedDeps) {
   return useCallback(async () => {
+    if (!persistEnabled) return
     const store = await loadAnnotationStore(location.href)
     if (store && store.annotations.length > 0) {
       // Data stored before renumbering existed can carry gaps (1, 2, 4, …);
@@ -166,7 +177,7 @@ function useLoadPersisted({
           ? Math.max(...normalized.relations.map((r) => r.id)) + 1
           : 1
     }
-  }, [setAnnotations, setRelations, setMetadata, nextRelationIdRef])
+  }, [setAnnotations, setRelations, setMetadata, nextRelationIdRef, persistEnabled])
 }
 
 interface AddDeps {

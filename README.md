@@ -30,6 +30,8 @@ Copy the generated text to your clipboard and paste it straight into AI editors 
 - Add quick instruction chips (Spacing / Color / Text / Size / Align / Remove) to an annotation for structured, at-a-glance intent — included in the output as tags
 - Open the "Adjust styles" panel on a pin to live-preview a CSS change on the page and record the exact before → after values (margin, padding, font-size, line-height, color, background-color, border-radius, gap)
 - Link two pins together with "Relation" to capture an instruction that spans both elements (e.g. "match the spacing between these"), shown as a connecting line and included in the output
+- Reorder the Inbox rows by drag and drop; pin numbers always follow the list, with no gaps left behind by a deletion
+- Choose whether annotations survive a page reload (Options), and delete every page's stored annotations from there when you want a clean slate
 - Auto-capture a screenshot when you click an element (cropped around the element)
 - Grab the element's HTML info (tag, attributes, text)
 - Capture the element's effective styles (a computed-style diff vs. tag defaults) so AI can answer "tighten this spacing / change this color" with real values
@@ -115,6 +117,14 @@ Enable "Select inside iframes" under the **Behavior** section of the Options pag
 - **Cross-origin iframes** can't be accessed due to browser security and are not selectable
 - iframes nested inside another iframe are not covered (single level only)
 - Framework/component collection is skipped for iframe elements (element info and screenshots are still captured)
+
+### Keeping (or dropping) annotations across reloads
+
+Annotations are stored per page and restored when you reload or revisit, which is what makes a long review survive a refresh. Turn "Keep annotations after a reload" off under the **Behavior** section of the Options page when you would rather start clean every time — annotations then live only in the tab until it reloads, and nothing is written to storage.
+
+- On by default
+- Switching it off leaves already-stored pages as they are; they come back if you switch it on again
+- "Stored annotations → Delete all" in the same section removes the saved annotations for every page (two clicks: the first arms the confirmation). Other settings — prefix rules, output templates, theme — are untouched
 
 If you are not comfortable with regular expressions, the [`tegakari-prefix-rules` skill](skills/tegakari-prefix-rules/SKILL.md) — installable via `gh skill` — generates the import JSON interactively: just answer which URLs your app runs on and the repository name. See [`skills/README.md`](skills/README.md) for details.
 

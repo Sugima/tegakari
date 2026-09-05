@@ -4,9 +4,12 @@ import {
   IFRAME_SELECTION_KEY,
   loadIframeSelection,
   loadOutputPreset,
+  loadPersistAnnotations,
   OUTPUT_FORMAT_KEY,
+  PERSIST_ANNOTATIONS_KEY,
   setIframeSelection,
   setOutputPreset,
+  setPersistAnnotations,
 } from "../settings"
 
 type StorageRecord = Record<string, unknown>
@@ -110,5 +113,27 @@ describe("settings: output preset", () => {
   it("still falls back to minimal for a string that merely starts with 'custom' without the colon", async () => {
     storage[OUTPUT_FORMAT_KEY] = "customized"
     await expect(loadOutputPreset()).resolves.toBe("minimal")
+  })
+})
+
+describe("settings: annotation persistence", () => {
+  it("defaults to true when unset — persisting is the original behavior", async () => {
+    await expect(loadPersistAnnotations()).resolves.toBe(true)
+  })
+
+  it("reads false only for an exact boolean false", async () => {
+    storage[PERSIST_ANNOTATIONS_KEY] = false
+    await expect(loadPersistAnnotations()).resolves.toBe(false)
+
+    storage[PERSIST_ANNOTATIONS_KEY] = "false"
+    await expect(loadPersistAnnotations()).resolves.toBe(true)
+  })
+
+  it("persists both settings of the flag", () => {
+    setPersistAnnotations(false)
+    expect(storage[PERSIST_ANNOTATIONS_KEY]).toBe(false)
+
+    setPersistAnnotations(true)
+    expect(storage[PERSIST_ANNOTATIONS_KEY]).toBe(true)
   })
 })

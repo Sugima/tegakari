@@ -1,7 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 
 import { collectPageMetadata } from "~lib/annotation-store"
-import { IFRAME_SELECTION_KEY, loadIframeSelection } from "~lib/settings"
+import {
+  IFRAME_SELECTION_KEY,
+  loadIframeSelection,
+  loadPersistAnnotations,
+  PERSIST_ANNOTATIONS_KEY,
+} from "~lib/settings"
 import { type ThemeMode, darkTheme, lightTheme } from "~lib/theme"
 import type { PageMetadata } from "~lib/types"
 
@@ -14,7 +19,8 @@ export function useOverlay() {
   const [isActive, setIsActive] = useState(false)
   const themeState = useOverlayTheme()
   const iframeEnabled = useIframeSelection()
-  const ann = useAnnotations()
+  const persistEnabled = usePersistAnnotations()
+  const ann = useAnnotations(persistEnabled)
   const picking = usePicking(isActive, iframeEnabled, ann.addAnnotation)
   const linkMode = useLinkMode()
   const [activeRelationId, setActiveRelationId] = useState<number | null>(null)
@@ -87,20 +93,35 @@ function useOverlayTheme() {
 // Reads the persisted "select inside same-origin iframes" flag and keeps it in
 // sync with changes made from the options page.
 function useIframeSelection(): boolean {
-  const [enabled, setEnabled] = useState(false)
+  return useStoredFlag(IFRAME_SELECTION_KEY, false, loadIframeSelection)
+}
+
+// Reads the "keep annotations across page reloads" flag, kept in sync with the
+// options page. Defaults to true — see `loadPersistAnnotations`.
+function usePersistAnnotations(): boolean {
+  return useStoredFlag(PERSIST_ANNOTATIONS_KEY, true, loadPersistAnnotations)
+}
+
+/** A boolean setting in `chrome.storage.local`, live-synced with the options page. */
+function useStoredFlag(
+  key: string,
+  fallback: boolean,
+  load: () => Promise<boolean>
+): boolean {
+  const [enabled, setEnabled] = useState(fallback)
 
   useEffect(() => {
-    loadIframeSelection().then(setEnabled)
+    load().then(setEnabled)
     const onChanged = (changes: {
       [key: string]: chrome.storage.StorageChange
     }) => {
-      if (IFRAME_SELECTION_KEY in changes) {
-        setEnabled(changes[IFRAME_SELECTION_KEY].newValue === true)
-      }
+      if (!(key in changes)) return
+      const next = changes[key].newValue
+      setEnabled(typeof next === "boolean" ? next : fallback)
     }
     chrome.storage.onChanged.addListener(onChanged)
     return () => chrome.storage.onChanged.removeListener(onChanged)
-  }, [])
+  }, [key, fallback, load])
 
   return enabled
 }

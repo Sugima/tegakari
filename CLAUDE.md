@@ -54,7 +54,7 @@ Content Script - Isolated World
 - **Background** (`src/background.ts`): 拡張アイコンクリック→TEGAKARI_TOGGLEを中継。TEGAKARI_CAPTUREリクエストでスクリーンショット撮影（`chrome.tabs.captureVisibleTab`）
 - **Isolated World** (`src/contents/overlay.tsx`): React製オーバーレイUI。要素選択、ハイライト、アノテーション管理、出力生成を担当。ロジックは `use-overlay.ts` / `use-annotations.ts` / `overlay-helpers.ts` に分離
 - **Main World** (`src/contents/main-world.ts`): ページのJSコンテキストに注入され、フレームワークのグローバル変数やReact Fiber/Vue内部構造にアクセス。Plasmoの`"world": "MAIN"`設定で実現
-- **Options** (`src/options.tsx`, `src/options/`): プレフィックスルール（URLパターン→指示プレフィックス）の管理とテーマ設定。ルールはJSONでimport/export可能
+- **Options** (`src/options.tsx`, `src/options/`): プレフィックスルール（URLパターン→指示プレフィックス）の管理、テーマ設定、Behavior設定（iframe内選択、アノテーションの永続化ON/OFF、保存済みアノテーションの全削除）。ルールはJSONでimport/export可能
 
 ### メッセージ型
 
@@ -79,6 +79,7 @@ Content Script - Isolated World
 | `annotation-order.ts` | アノテーション番号の振り直し（表示順で1..N、欠番なし）・並び替え・安定ID（`uid`）の生成 |
 | `annotation-store.ts` | アノテーションのURL単位永続化（`chrome.storage.local`、上限50件） |
 | `prefix-rules.ts` | URLパターン→プレフィックスのルール管理・マッチング・JSONシリアライズ |
+| `settings.ts` | 出力プリセット・iframe内選択・アノテーション永続化フラグの読み書き（`chrome.storage.local`） |
 | `theme.ts` | ダーク/ライトテーマ定義、ThemeContext、`chrome.storage.local`で永続化 |
 | `types.ts` | メッセージ型・Annotation・BatchInput等の型定義 |
 
@@ -98,7 +99,7 @@ Content Script - Isolated World
 
 - **Annotation型**: ID、ElementInfo、FrameworkInfo、ComponentInfo、instruction（ユーザー指示）、クリック座標、自動クロップ済みスクリーンショットを保持
 - **非同期フレームワーク収集**: 要素クリック→Annotation即時作成→Main Worldへフレームワーク情報を非同期リクエスト（`pendingIdRef`で対応するAnnotationを追跡）→結果受信でAnnotation更新
-- **永続化**: URL単位（hash除外）で `chrome.storage.local` に保存され、再訪時にピンが復元される（`annotation-store.ts`）
+- **永続化**: URL単位（hash除外）で `chrome.storage.local` に保存され、再訪時にピンが復元される（`annotation-store.ts`）。Optionsの「Keep annotations after a reload」がOFFの間は読み書きとも行わず（メモリのみ、既存の保存分には触れない）、Optionsの「Delete all」で全URL分を削除できる
 - **出力形式**: JSONL（デフォルト）またはMarkdown。バッチ出力ではPage Contextを共有し、各Annotationを個別セクションとして出力。プレフィックスルールにマッチするURLでは指示プレフィックスが自動付与される
 
 ### テーマシステム
