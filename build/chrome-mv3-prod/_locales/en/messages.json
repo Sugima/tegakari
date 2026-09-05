@@ -87,6 +87,38 @@
     "message": "Also pick elements inside same-origin iframes (e.g. a Google Apps Script web app). Cross-origin iframes can't be accessed.",
     "description": "Help text under the iframe selection toggle"
   },
+  "options_behavior_persist_label": {
+    "message": "Keep annotations after a reload",
+    "description": "Label for the annotation persistence toggle"
+  },
+  "options_behavior_persist_help": {
+    "message": "Store annotations per page so the pins come back when you revisit or reload. Turn this off to keep them only until the page reloads — already stored pages are left as they are.",
+    "description": "Help text under the annotation persistence toggle"
+  },
+  "options_behavior_clear_label": {
+    "message": "Stored annotations",
+    "description": "Label for the delete-all stored annotations action"
+  },
+  "options_behavior_clear_help": {
+    "message": "Delete the annotations saved for every page. This cannot be undone.",
+    "description": "Help text under the delete-all stored annotations action"
+  },
+  "options_behavior_clear_button": {
+    "message": "Delete all",
+    "description": "Button that deletes every page's stored annotations"
+  },
+  "options_behavior_clear_confirm": {
+    "message": "Click again to confirm",
+    "description": "Second-click confirmation label on the delete-all button"
+  },
+  "options_behavior_clear_done": {
+    "message": "Deleted annotations for $1 page(s)",
+    "description": "Feedback after deleting every page's stored annotations"
+  },
+  "options_behavior_clear_empty": {
+    "message": "No stored annotations",
+    "description": "Feedback when there was nothing to delete"
+  },
   "options_header_settings": {
     "message": "Settings",
     "description": "Page header subtitle next to the tegakari logo"
