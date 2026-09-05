@@ -8,6 +8,7 @@ import {
 import type { OutputPreset } from "./types"
 
 export const IFRAME_SELECTION_KEY = "tegakariIframeSelection"
+export const PERSIST_ANNOTATIONS_KEY = "tegakariPersistAnnotations"
 // Key name kept as-is (predates the preset system) so existing "jsonl"/
 // "markdown" values persisted by earlier versions keep loading correctly.
 export const OUTPUT_FORMAT_KEY = "tegakariOutputFormat"
@@ -43,6 +44,26 @@ export async function loadIframeSelection(): Promise<boolean> {
 /** Persist the iframe-selection flag. */
 export function setIframeSelection(enabled: boolean): void {
   chrome.storage.local.set({ [IFRAME_SELECTION_KEY]: enabled })
+}
+
+/**
+ * Read the "keep annotations across page reloads" flag (defaults to true —
+ * persistence is the original behavior). While it is off, annotations live
+ * only in the tab's memory: nothing is written to storage and nothing is read
+ * back, so a reload starts empty. Anything already stored is left untouched
+ * (the Options page has an explicit "delete all" action for that).
+ */
+export async function loadPersistAnnotations(): Promise<boolean> {
+  return new Promise((resolve) => {
+    chrome.storage.local.get(PERSIST_ANNOTATIONS_KEY, (result) => {
+      resolve(result[PERSIST_ANNOTATIONS_KEY] !== false)
+    })
+  })
+}
+
+/** Persist the "keep annotations across page reloads" flag. */
+export function setPersistAnnotations(enabled: boolean): void {
+  chrome.storage.local.set({ [PERSIST_ANNOTATIONS_KEY]: enabled })
 }
 
 /**

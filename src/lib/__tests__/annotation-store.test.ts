@@ -3,6 +3,8 @@ import { beforeEach, expect, it, vi } from "vitest"
 import type { Annotation, AnnotationStore, PageMetadata } from "../types"
 import {
   clearAllAnnotations,
+  clearAllStoredAnnotations,
+  countStoredAnnotationPages,
   collectPageMetadata,
   loadAnnotationStore,
   saveAnnotationStore,
@@ -52,14 +54,14 @@ function storageKey(url: string) {
 
 beforeEach(() => {
   for (const key of Object.keys(storage)) delete storage[key]
-  storageGet.mockImplementation(async (key: string) => ({
-    [key]: storage[key],
-  }))
+  storageGet.mockImplementation(async (key: string | null) =>
+    key === null ? { ...storage } : { [key]: storage[key] }
+  )
   storageSet.mockImplementation(async (value: StorageRecord) => {
     Object.assign(storage, value)
   })
-  storageRemove.mockImplementation(async (key: string) => {
-    delete storage[key]
+  storageRemove.mockImplementation(async (key: string | string[]) => {
+    for (const k of Array.isArray(key) ? key : [key]) delete storage[k]
   })
 
   vi.stubGlobal("chrome", {
@@ -192,4 +194,22 @@ it("annotation-store: collects page metadata from browser globals", () => {
     timestamp: 12345,
     frameworkInfo,
   })
+})
+
+it("annotation-store: counts and clears every page's stored annotations, leaving other settings alone", async () => {
+  await saveAnnotationStore({ url: "https://a.example/x", metadata, annotations: [annotation(1)] })
+  await saveAnnotationStore({ url: "https://b.example/y", metadata, annotations: [annotation(1)] })
+  storage.tegakariPrefixRules = [{ pattern: "a.example", prefix: "[repo=a]" }]
+
+  await expect(countStoredAnnotationPages()).resolves.toBe(2)
+  await expect(clearAllStoredAnnotations()).resolves.toBe(2)
+
+  await expect(countStoredAnnotationPages()).resolves.toBe(0)
+  expect(storage.tegakariPrefixRules).toEqual([
+    { pattern: "a.example", prefix: "[repo=a]" },
+  ])
+})
+
+it("annotation-store: clearing when nothing is stored reports zero", async () => {
+  await expect(clearAllStoredAnnotations()).resolves.toBe(0)
 })

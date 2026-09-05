@@ -34,6 +34,8 @@ type ExtensionFixtures = {
   readPrefixRules: () => Promise<PrefixRule[]>
   /** Enable/disable selecting elements inside same-origin iframes. */
   seedIframeSelection: (enabled: boolean) => Promise<void>
+  /** Enable/disable keeping annotations across page reloads. */
+  seedPersistAnnotations: (enabled: boolean) => Promise<void>
 }
 
 export const test = base.extend<ExtensionFixtures>({
@@ -103,6 +105,15 @@ export const test = base.extend<ExtensionFixtures>({
     const seed = async (enabled: boolean) => {
       await serviceWorker.evaluate(async (value) => {
         await chrome.storage.local.set({ tegakariIframeSelection: value })
+      }, enabled)
+    }
+    await use(seed)
+  },
+
+  seedPersistAnnotations: async ({ serviceWorker }, use) => {
+    const seed = async (enabled: boolean) => {
+      await serviceWorker.evaluate(async (value) => {
+        await chrome.storage.local.set({ tegakariPersistAnnotations: value })
       }, enabled)
     }
     await use(seed)

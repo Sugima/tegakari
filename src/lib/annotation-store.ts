@@ -63,6 +63,45 @@ export async function clearAllAnnotations(url: string): Promise<void> {
   }
 }
 
+/**
+ * `chrome.storage.local.get(null)` returns every stored item, a form the
+ * bundled typings don't model.
+ */
+async function readAllStorage(): Promise<Record<string, unknown>> {
+  const getAll = chrome.storage.local.get as unknown as (
+    keys: null
+  ) => Promise<Record<string, unknown>>
+  return getAll(null)
+}
+
+function annotationKeys(all: Record<string, unknown>): string[] {
+  return Object.keys(all).filter((key) => key.startsWith(STORAGE_PREFIX))
+}
+
+/**
+ * Deletes every page's stored annotations (all URLs), returning how many
+ * pages were dropped. Used by the Options page's explicit "delete all"
+ * action — nothing else clears storage wholesale.
+ */
+export async function clearAllStoredAnnotations(): Promise<number> {
+  try {
+    const keys = annotationKeys(await readAllStorage())
+    if (keys.length > 0) await chrome.storage.local.remove(keys)
+    return keys.length
+  } catch {
+    return 0
+  }
+}
+
+/** How many pages currently have stored annotations. */
+export async function countStoredAnnotationPages(): Promise<number> {
+  try {
+    return annotationKeys(await readAllStorage()).length
+  } catch {
+    return 0
+  }
+}
+
 export function collectPageMetadata(
   frameworkInfo: import("./types").FrameworkInfo | null
 ): PageMetadata {

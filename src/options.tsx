@@ -8,11 +8,13 @@ import { OutputTemplatesSection } from "./options/components/output-templates-se
 import { PrefixRulesSection } from "./options/components/prefix-rules-section"
 import { SettingsSection } from "./options/components/settings-section"
 import { useIframeSelection } from "./options/hooks/use-iframe-selection"
+import { usePersistAnnotations } from "./options/hooks/use-persist-annotations"
 import { useStoredTheme } from "./options/hooks/use-stored-theme"
 
 export default function OptionsPage() {
   const { theme, mode, toggleMode } = useStoredTheme()
   const { enabled: iframeEnabled, toggle: toggleIframe } = useIframeSelection()
+  const { enabled: persistEnabled, toggle: togglePersist } = usePersistAnnotations()
 
   return (
     <div
@@ -35,6 +37,8 @@ export default function OptionsPage() {
             theme={theme}
             iframeEnabled={iframeEnabled}
             onToggleIframe={toggleIframe}
+            persistEnabled={persistEnabled}
+            onTogglePersist={togglePersist}
           />
         </SettingsSection>
 

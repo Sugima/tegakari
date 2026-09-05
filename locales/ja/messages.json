@@ -29,6 +29,18 @@
   "options_behavior_iframe_help": {
     "message": "同一オリジンのiframe内の要素も選択できます（例: Google Apps ScriptのWebアプリ）。クロスオリジンのiframeにはアクセスできません。"
   },
+  "options_behavior_persist_label": { "message": "リロード後もアノテーションを保持" },
+  "options_behavior_persist_help": {
+    "message": "ページ単位でアノテーションを保存し、再訪・リロード時にピンを復元します。オフにするとリロードで消え、保存済みのページはそのまま残ります。"
+  },
+  "options_behavior_clear_label": { "message": "保存済みアノテーション" },
+  "options_behavior_clear_help": {
+    "message": "全ページ分の保存済みアノテーションを削除します。元に戻せません。"
+  },
+  "options_behavior_clear_button": { "message": "すべて削除" },
+  "options_behavior_clear_confirm": { "message": "もう一度クリックで確定" },
+  "options_behavior_clear_done": { "message": "$1件のページの保存分を削除しました" },
+  "options_behavior_clear_empty": { "message": "保存済みはありません" },
   "options_header_settings": { "message": "設定" },
   "options_footer_message": {
     "message": "tegakariは無料のオープンソースソフトウェアです。役に立ったら、開発の継続をご支援ください。"
