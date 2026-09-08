@@ -6,6 +6,9 @@ const mockTabsCreate = vi.fn()
 const mockGetURL = vi.fn((path: string) => `chrome-extension://test-id/${path}`)
 const mockMenuCreate = vi.fn()
 const mockMenuRemoveAll = vi.fn((cb?: () => void) => cb?.())
+const mockGetManifest = vi.fn()
+const mockExecuteScript = vi.fn()
+const mockGetRegisteredContentScripts = vi.fn()
 const onClickedListeners: Function[] = []
 const onMessageListeners: Function[] = []
 const onInstalledListeners: Function[] = []
@@ -37,6 +40,11 @@ vi.stubGlobal("chrome", {
       addListener: (fn: Function) => onInstalledListeners.push(fn),
     },
     getURL: mockGetURL,
+    getManifest: mockGetManifest,
+  },
+  scripting: {
+    executeScript: mockExecuteScript,
+    getRegisteredContentScripts: mockGetRegisteredContentScripts,
   },
 })
 
@@ -48,6 +56,14 @@ beforeEach(async () => {
   mockGetURL.mockClear()
   mockMenuCreate.mockReset()
   mockMenuRemoveAll.mockClear()
+  mockGetManifest.mockReset()
+  mockGetManifest.mockReturnValue({
+    content_scripts: [{ js: ["overlay.js"] }, { js: ["use-overlay.js"] }],
+  })
+  mockExecuteScript.mockReset()
+  mockExecuteScript.mockResolvedValue(undefined)
+  mockGetRegisteredContentScripts.mockReset()
+  mockGetRegisteredContentScripts.mockResolvedValue([])
   onClickedListeners.length = 0
   onMessageListeners.length = 0
   onInstalledListeners.length = 0
@@ -188,4 +204,71 @@ it("background: ignores context-menu clicks inside an iframe (frameId != 0)", ()
     { id: 7 }
   )
   expect(mockSendMessage).not.toHaveBeenCalled()
+})
+
+// A tab that was already open when the extension was installed or reloaded has
+// no content script, so the first sendMessage rejects with "Could not
+// establish connection. Receiving end does not exist."
+const NO_RECEIVER = new Error(
+  "Could not establish connection. Receiving end does not exist."
+)
+
+it("background: injects the content scripts and retries when no receiver exists", async () => {
+  mockSendMessage.mockRejectedValueOnce(NO_RECEIVER).mockResolvedValueOnce(undefined)
+
+  await onClickedListeners[0]({ id: 42 })
+
+  expect(mockExecuteScript).toHaveBeenCalledWith({
+    target: { tabId: 42 },
+    files: ["overlay.js", "use-overlay.js"],
+  })
+  expect(mockSendMessage).toHaveBeenCalledTimes(2)
+  expect(mockSendMessage).toHaveBeenLastCalledWith(42, { type: "TEGAKARI_TOGGLE" })
+})
+
+it("background: injects the MAIN-world script from its registration", async () => {
+  mockSendMessage.mockRejectedValueOnce(NO_RECEIVER).mockResolvedValueOnce(undefined)
+  mockGetRegisteredContentScripts.mockResolvedValue([
+    { id: "srcContentsMainWorld", world: "MAIN", js: ["main-world.js"] },
+    { id: "other", world: "ISOLATED", js: ["ignored.js"] },
+  ])
+
+  await onClickedListeners[0]({ id: 42 })
+
+  expect(mockExecuteScript).toHaveBeenCalledWith({
+    target: { tabId: 42 },
+    files: ["main-world.js"],
+    world: "MAIN",
+  })
+})
+
+it("background: stays silent when the page forbids injection", async () => {
+  mockSendMessage.mockRejectedValue(NO_RECEIVER)
+  mockExecuteScript.mockRejectedValue(new Error("Cannot access a chrome:// URL"))
+
+  await expect(onClickedListeners[0]({ id: 42 })).resolves.toBeUndefined()
+})
+
+it("background: does not inject when the content script already answers", async () => {
+  mockSendMessage.mockResolvedValue(undefined)
+
+  await onClickedListeners[0]({ id: 42 })
+
+  expect(mockExecuteScript).not.toHaveBeenCalled()
+})
+
+it("background: retries a context-menu click the same way", async () => {
+  mockSendMessage.mockRejectedValueOnce(NO_RECEIVER).mockResolvedValueOnce(undefined)
+
+  onMenuClickedListeners[0](
+    { menuItemId: "tegakari-select-element", frameId: 0 },
+    { id: 7 }
+  )
+
+  await vi.waitFor(() => {
+    expect(mockSendMessage).toHaveBeenLastCalledWith(7, {
+      type: "TEGAKARI_CONTEXT_SELECT",
+    })
+  })
+  expect(mockExecuteScript).toHaveBeenCalled()
 })

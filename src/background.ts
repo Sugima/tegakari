@@ -1,6 +1,52 @@
+const MAIN_WORLD = "MAIN"
+
+// Content scripts are injected only while a page loads, so a tab that was
+// already open when the extension was installed or reloaded has no listener.
+// `chrome.tabs.sendMessage` rejects there with "Could not establish
+// connection. Receiving end does not exist." Inject on demand instead of
+// making the user reload every tab.
+async function injectContentScripts(tabId: number) {
+  const files = (chrome.runtime.getManifest().content_scripts ?? []).flatMap(
+    (script) => script.js ?? []
+  )
+  if (files.length > 0) {
+    await chrome.scripting.executeScript({ target: { tabId }, files })
+  }
+
+  // The MAIN-world script is registered at runtime rather than declared in the
+  // manifest, so its file list has to come from the registration.
+  const registered = await chrome.scripting.getRegisteredContentScripts()
+  const mainWorldFiles = registered
+    .filter((script) => script.world === MAIN_WORLD)
+    .flatMap((script) => script.js ?? [])
+  if (mainWorldFiles.length > 0) {
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: mainWorldFiles,
+      world: MAIN_WORLD,
+    })
+  }
+}
+
+async function sendToTab(tabId: number, message: { type: string }) {
+  try {
+    await chrome.tabs.sendMessage(tabId, message)
+    return
+  } catch {
+    // No listener yet — fall through and inject.
+  }
+  try {
+    await injectContentScripts(tabId)
+    await chrome.tabs.sendMessage(tabId, message)
+  } catch {
+    // chrome:// pages, the Chrome Web Store and the PDF viewer forbid
+    // injection. tegakari cannot run there, so there is nothing to report.
+  }
+}
+
 chrome.action.onClicked.addListener(async (tab) => {
   if (tab.id) {
-    await chrome.tabs.sendMessage(tab.id, { type: "TEGAKARI_TOGGLE" })
+    await sendToTab(tab.id, { type: "TEGAKARI_TOGGLE" })
   }
 })
 
@@ -28,7 +74,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     info.frameId === 0 &&
     tab?.id
   ) {
-    chrome.tabs.sendMessage(tab.id, { type: "TEGAKARI_CONTEXT_SELECT" })
+    void sendToTab(tab.id, { type: "TEGAKARI_CONTEXT_SELECT" })
   }
 })
 
