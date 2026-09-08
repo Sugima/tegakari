@@ -8,6 +8,6 @@ test-results/
 playwright-report/
 build/*.zip
 
-# Chrome拡張の署名用秘密鍵（絶対にコミットしない）
+
+# 旧CRX配布の署名鍵。未使用だが誤コミット防止のため残す
 key.pem
-build/*.crx

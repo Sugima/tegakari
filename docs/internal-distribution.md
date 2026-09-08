@@ -1,126 +1,64 @@
-# 社内配布ガイド（自前ホスト CRX）
+# 社内配布ガイド（ZIP + 開発者モード）
 
-Chrome ウェブストアを経由せず、Google Workspace の管理コンソールから社内メンバーへ
-tegakari を配布する手順。ストアのデベロッパー登録料は不要。
+ビルド済みの ZIP を GitHub Pages に置き、各自が Chrome の「パッケージ化されていない
+拡張機能を読み込む」で導入する。管理者権限もデベロッパー登録料も不要。
 
-ストアへ公開する場合は [`publishing.md`](./publishing.md) を参照。
+Chrome ウェブストアに公開する場合は [`publishing.md`](./publishing.md) を参照。
 
-## 前提
-
-- Google Workspace の管理者権限
-- 署名用の秘密鍵 `key.pem`（リポジトリ直下、gitignore 済み）
-- `Sugima/tegakari` の GitHub Pages（配信元）
-
-> このリポジトリは `iemong/tegakari` のフォーク。配信URLと `manifest.update_url` は
-> **必ず `Sugima/tegakari` 側を指すこと。** フォーク元を指すと、こちらの管理外の
-> サーバーから更新を受け取ることになる。
-
-## 拡張機能ID
+## 配布URL
 
 ```
-gdhhjkdkljcpdhnkaiomkffeckjhcogh
+https://sugima.github.io/tegakari/dist/tegakari.zip
 ```
 
-IDは `key.pem` から決まる。`package.json` の `manifest.key` に同じ鍵の公開鍵を入れて
-あるため、`pnpm dev` で読み込んだ場合も同じIDになる。
+バージョンが上がっても変わらない。周知したURLをそのまま使い続けてよい。
 
-> **`key.pem` をパスワードマネージャにバックアップすること。** 失うと同じIDで署名できず、
-> 配布済みの拡張は更新を受け取れなくなる（全員に入れ直してもらうことになる）。
+## 1. GitHub Pages（設定済み）
 
-## 1. GitHub Pages を有効化（初回のみ）
+`Sugima/tegakari` の Settings → Pages が `main` / `/docs` を配信するよう設定済み。
+サイトルートは `https://sugima.github.io/tegakari/`。
 
-`Sugima/tegakari` → **Settings** → **Pages** → Source を **Deploy from a branch**、
-ブランチ `main` / フォルダ `/docs` にして保存。
-
-公開されるサイトルートは `https://sugima.github.io/tegakari/`、配布物はその下の
-`dist/` に置く。
-
-## 2. 配布物の生成と公開
+## 2. リリース手順
 
 ```bash
-./scripts/pack-crx.sh
-git add docs/dist && git commit -m "chore: publish crx <version>" && git push
+# package.json の version を上げてから
+./scripts/pack-zip.sh
+git add docs/dist && git commit -m "chore: publish zip x.y.z" && git push
 ```
 
-`docs/dist/` に `tegakari.crx` と `update.xml` が出力され、push すると
-GitHub Pages に反映される（反映まで1分程度）。配信元を変える場合:
+`docs/dist/tegakari.zip` が更新され、push すると GitHub Pages に反映される
+（反映まで1分程度）。反映後、Slack などで更新を周知する。
 
-```bash
-BASE_URL=https://example.com/tegakari ./scripts/pack-crx.sh
-```
+自動更新はないので、各自に入れ直してもらう必要がある。
 
-リポジトリは public なので CRX は誰でもダウンロードできるが、ポリシーなしに
-インストールすることはChromeが禁止しているため、第三者が勝手に導入することはできない。
+## 3. 各自の導入手順
 
-## 3. 管理コンソールで配布する
+以下をそのまま周知してよい。
 
-tegakari は `<all_urls>` で全ページに content script を注入し、画面を撮影できる開発者向け
-ツール。**組織部門まるごとの強制インストールは使わないこと。** 必要としない人のブラウザにも
-入り、しかもユーザー側では無効化も削除もできなくなる。
+1. <https://sugima.github.io/tegakari/dist/tegakari.zip> をダウンロード
+2. 解凍する。`tegakari` フォルダができる
+3. **このフォルダを消さない場所に移動する**（例: `~/chrome-extensions/tegakari`）
+   拡張機能はこのフォルダを直接読むため、消したり移動したりすると動かなくなる
+4. Chrome で `chrome://extensions` を開く
+5. 右上の **「デベロッパー モード」** をONにする
+6. **「パッケージ化されていない拡張機能を読み込む」** をクリックし、`tegakari` フォルダを選ぶ
+7. ツールバーに tegakari のアイコンが出れば完了。`Cmd+Shift+Y`（Windowsは `Ctrl+Shift+Y`）で起動
 
-### 3-1. インストールソースを許可（初回のみ）
+Chrome の起動時に **「デベロッパー モードの拡張機能を無効にする」** という警告が出るが、
+**「キャンセル」** を選べば使い続けられる。
 
-**デバイス** → **Chrome** → **設定** → **ユーザーとブラウザ** → **インストールソース** に
-以下を追加する。ストア外のCRXをユーザー自身がインストールできるようにするための設定。
+## 4. 各自の更新手順
 
-```
-https://sugima.github.io/*
-```
+1. 新しい ZIP をダウンロードして解凍
+2. 手順3で置いたフォルダの中身を、解凍した中身で置き換える
+3. `chrome://extensions` の tegakari の **更新ボタン（⟳）** を押す
 
-同じ画面の **許可されたタイプ** で「拡張機能」にチェックが入っていることも確認する。
-
-### 3-2. 拡張機能を登録
-
-1. [管理コンソール](https://admin.google.com) → **デバイス** → **Chrome** → **アプリと拡張機能** → **ユーザーとブラウザ**
-2. 左のツリーで対象の組織部門を選ぶ
-3. 右下の **「+」** → **「Chrome アプリまたは拡張機能を ID で追加」**
-4. 入力する値
-   - 拡張機能ID: `gdhhjkdkljcpdhnkaiomkffeckjhcogh`
-   - 取得元: **「カスタム URL から」** を選び、`https://sugima.github.io/tegakari/dist/update.xml` を入力
-5. 追加された行の **インストールポリシー** を **「インストールを許可」** に設定
-6. 保存
-
-### 3-3. 使う人に入れてもらう
-
-配布するURL:
-
-```
-https://sugima.github.io/tegakari/dist/tegakari.crx
-```
-
-このURLはバージョンが上がっても変わらない。周知したURLをそのまま使い続けてよい。
-
-Chromeでこれを開くとインストールの確認ダイアログが出る。入れた本人が
-`chrome://extensions` からいつでも削除できる。
-
-> 最初は1人で試すこと。インストールソースの設定が効いていないと、CRXが
-> ダウンロードされるだけでインストールに進まない。
-
-### 代替: グループ限定の強制インストール
-
-各自にインストールさせる運用が回らない場合は、利用希望者だけを入れた Google グループを
-作り、そのグループに対してのみ **強制インストール** を適用する（アプリと拡張機能の画面で
-組織部門ではなくグループを選ぶ）。グループへの参加が実質的な同意になる。
-
-この場合もユーザー側では削除できないので、抜けたい人はグループから外す運用が要る。
-
-## 4. 更新の流し方
-
-1. `package.json` の `version` を上げる
-2. `./scripts/pack-crx.sh`（古い `.crx` は自動で消える）
-3. `docs/dist/` をコミットして push
-
-管理コンソール側の再設定も、配布URLの周知しなおしも不要。Chromeが `update.xml` を
-数時間おきに見に行き、`version` 属性が手元の版より新しければ `codebase` のCRXを取得する。
-判定に使われるのは `version` 属性だけで、CRXのファイル名は見ていない。即座に確認したい
-ときは `chrome://extensions` の **「更新」** ボタンを押す。
-
-GitHub Pages のキャッシュは `max-age=600`。push 直後の10分間は古いCRXが返ることがあるが、
-その場合はChromeが次回のチェックで取り直す。
+フォルダのパスを変えなければ、拡張機能の設定（プレフィックスルール等）は保持される。
 
 ## 補足
 
 - tegakari は全ページに content script を注入し、`chrome.tabs.captureVisibleTab` で
-  表示中の画面を撮影する。入れてもらう前に何をする拡張なのかを説明しておく。
-- 拡張の設定（プレフィックスルール等）は各自の `chrome.storage.local` に入る。
-  管理コンソールから初期値を配ることはこの構成では行っていない。
+  表示中の画面を撮影する。周知の際に何をする拡張なのかを説明しておく。
+- 拡張の設定は各自の `chrome.storage.local` に入る。初期値の配布は行っていない。
+- 人数が増えて版ズレが問題になったら、Chrome ウェブストアの限定公開に移す。
+  自動更新が効くようになる。手順は [`publishing.md`](./publishing.md)。
