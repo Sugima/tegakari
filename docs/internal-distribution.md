@@ -42,7 +42,7 @@ IDは `key.pem` から決まる。`package.json` の `manifest.key` に同じ鍵
 git add docs/dist && git commit -m "chore: publish crx <version>" && git push
 ```
 
-`docs/dist/` に `tegakari-<version>.crx` と `update.xml` が出力され、push すると
+`docs/dist/` に `tegakari.crx` と `update.xml` が出力され、push すると
 GitHub Pages に反映される（反映まで1分程度）。配信元を変える場合:
 
 ```bash
@@ -85,8 +85,10 @@ https://sugima.github.io/*
 配布するURL:
 
 ```
-https://sugima.github.io/tegakari/dist/tegakari-0.0.6.crx
+https://sugima.github.io/tegakari/dist/tegakari.crx
 ```
+
+このURLはバージョンが上がっても変わらない。周知したURLをそのまま使い続けてよい。
 
 Chromeでこれを開くとインストールの確認ダイアログが出る。入れた本人が
 `chrome://extensions` からいつでも削除できる。
@@ -108,12 +110,13 @@ Chromeでこれを開くとインストールの確認ダイアログが出る�
 2. `./scripts/pack-crx.sh`（古い `.crx` は自動で消える）
 3. `docs/dist/` をコミットして push
 
-管理コンソール側の再設定は不要。すでに入れた人には、Chromeが `update.xml` を数時間おきに
-見に行き `version` が上がっていれば自動で差し替わる。即座に確認したいときは
-`chrome://extensions` の **「更新」** ボタンを押す。
+管理コンソール側の再設定も、配布URLの周知しなおしも不要。Chromeが `update.xml` を
+数時間おきに見に行き、`version` 属性が手元の版より新しければ `codebase` のCRXを取得する。
+判定に使われるのは `version` 属性だけで、CRXのファイル名は見ていない。即座に確認したい
+ときは `chrome://extensions` の **「更新」** ボタンを押す。
 
-新しく入れる人に渡すURLはバージョンごとに変わる（`tegakari-<version>.crx`）。最新の
-ファイル名は `update.xml` の `codebase` を見れば分かる。
+GitHub Pages のキャッシュは `max-age=600`。push 直後の10分間は古いCRXが返ることがあるが、
+その場合はChromeが次回のチェックで取り直す。
 
 ## 補足
 

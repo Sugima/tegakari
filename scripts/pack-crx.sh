@@ -38,7 +38,7 @@ rm -f build/chrome-mv3-prod.crx
 
 mkdir -p "$OUT_DIR"
 rm -f "$OUT_DIR"/*.crx
-CRX_NAME="tegakari-${VERSION}.crx"
+CRX_NAME="tegakari.crx"
 mv build/chrome-mv3-prod.crx "$OUT_DIR/$CRX_NAME"
 
 echo "==> update.xml を生成"
