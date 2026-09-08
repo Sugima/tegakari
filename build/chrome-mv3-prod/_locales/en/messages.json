@@ -123,17 +123,9 @@
     "message": "Settings",
     "description": "Page header subtitle next to the tegakari logo"
   },
-  "options_footer_message": {
-    "message": "tegakari is free and open source. If you find it useful, please consider supporting continued development.",
-    "description": "Footer message about the project being free and open source"
-  },
-  "options_footer_sponsor": {
-    "message": "♥ Sponsor on GitHub",
-    "description": "Footer link to the GitHub Sponsors page"
-  },
-  "options_footer_repo": {
-    "message": "★ GitHub Repository",
-    "description": "Footer link to the GitHub repository"
+  "options_footer_attribution": {
+    "message": "This extension is a fork of the following MIT-licensed project:",
+    "description": "Footer credit line pointing at the upstream repository"
   },
   "options_section_prefix_rules": {
     "message": "Prefix Rules",
