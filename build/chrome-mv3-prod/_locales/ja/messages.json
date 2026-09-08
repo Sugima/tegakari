@@ -42,11 +42,9 @@
   "options_behavior_clear_done": { "message": "$1件のページの保存分を削除しました" },
   "options_behavior_clear_empty": { "message": "保存済みはありません" },
   "options_header_settings": { "message": "設定" },
-  "options_footer_message": {
-    "message": "tegakariは無料のオープンソースソフトウェアです。役に立ったら、開発の継続をご支援ください。"
+  "options_footer_attribution": {
+    "message": "本拡張は MIT ライセンスで公開されている次のプロジェクトのフォークです:"
   },
-  "options_footer_sponsor": { "message": "♥ GitHubでスポンサーになる" },
-  "options_footer_repo": { "message": "★ GitHubリポジトリ" },
   "options_section_prefix_rules": { "message": "プレフィックスルール" },
   "options_prefix_rules_desc_prefix": {
     "message": "URLパターンはホスト名と照合されます（例："

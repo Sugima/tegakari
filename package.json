@@ -3,7 +3,7 @@
   "displayName": "tegakari",
   "version": "0.0.6",
   "description": "Web要素を選択して、HTML・フレームワーク・コンポーネント情報とスクリーンショットをAIエディタ用にコピーするChrome拡張",
-  "homepage": "https://github.com/iemong/tegakari",
+  "homepage": "https://github.com/Sugima/tegakari",
   "license": "MIT",
   "scripts": {
     "dev": "plasmo dev",
@@ -54,8 +54,10 @@
     ]
   },
   "manifest": {
+    "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq9dEnsHtdtrolELrzfeYRBful6UAKIPFZx6VNE4QpgA4j/Dngck5nDh9c1Q8MxI0sygA0SJpfv5nWdK09b7VYaN1tLGqtUUXTzz7se/U832olgxK8K+hEuOp/olfasX1viehF9NTnGqH1gSfncrmmtc2meAYzq4HXB33np+VrvhT7JStEd6lzyHKZPhLg/YNuBPSGdZceN4cdjBk08Qc8HEyD6q6Ng8G3y4+NEAsNIPRPwR/MlPjXPo82IvzOKoT8bSeo0FQK87QOCc5ySZh8S846fsia9o4JsqUafs9O7gpiU26oa0gkwxjXEwSxhror1YqE+Qp7CwFSEqZxObolQIDAQAB",
+    "update_url": "https://sugima.github.io/tegakari/dist/update.xml",
     "default_locale": "en",
-    "homepage_url": "https://github.com/iemong/tegakari",
+    "homepage_url": "https://github.com/Sugima/tegakari",
     "permissions": [
       "activeTab",
       "storage",
