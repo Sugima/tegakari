@@ -7,3 +7,7 @@ tsconfig.tsbuildinfo
 test-results/
 playwright-report/
 build/*.zip
+
+# Chrome拡張の署名用秘密鍵（絶対にコミットしない）
+key.pem
+build/*.crx
